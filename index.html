@@ -1,0 +1,2838 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>한영 번역 마스터</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+
+        .view-section {
+            display: none;
+        }
+
+        .view-section.active {
+            display: block;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3b82f6;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: auto;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+</head>
+
+<body class="text-slate-800 min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-[1400px] mx-auto px-2 sm:px-3 py-2 flex justify-between items-center gap-1.5 overflow-x-auto">
+            <div class="flex items-center gap-1.5 shrink-0">
+                <h1 id="headerTitle" class="text-xs sm:text-sm lg:text-base font-extrabold tracking-tight whitespace-nowrap">🎤 한영 번역 마스터</h1>
+                <!-- Teacher Only: Student Link Copy Button -->
+                <button id="copyStudentUrlBtn" onclick="copyStudentUrl()" class="teacher-only hidden px-2 py-1 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-bold text-[11px] lg:text-xs shadow transition flex items-center gap-1 cursor-pointer whitespace-nowrap" title="학생들에게 공유할 학생 제출 전용 주소를 복사합니다">
+                    <span>📋 학생 주소 복사</span>
+                </button>
+                <!-- Teacher Only: PDF Handout Button -->
+                <button id="pdfHandoutBtn" onclick="openPdfHandoutModal()" class="teacher-only hidden px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-bold text-[11px] lg:text-xs shadow transition flex items-center gap-1 cursor-pointer whitespace-nowrap" title="A4 가로 10문장 단위 번역 학습 유인물 PDF 다운로드 / 인쇄">
+                    <span>📄 유인물 PDF/인쇄</span>
+                </button>
+            </div>
+
+            <!-- Student Only Nav -->
+            <nav id="studentNav" class="student-only hidden flex space-x-1 shrink-0">
+                <button onclick="switchView('student')" class="student-nav-btn px-2.5 py-1 rounded-lg hover:bg-white/20 transition font-medium text-xs lg:text-sm whitespace-nowrap bg-white/20">
+                    ✏️ 번역 제출
+                </button>
+                <button id="studentNavPeerPartBtn" onclick="switchView('peerEvalParticipate')" class="student-nav-btn px-2.5 py-1 rounded-lg hover:bg-white/20 transition font-medium text-xs lg:text-sm whitespace-nowrap">
+                    ✍️ 동료 평가 참여
+                </button>
+                <button id="studentNavPeerResBtn" onclick="switchView('peerEvalResult')" class="student-nav-btn px-2.5 py-1 rounded-lg hover:bg-white/20 transition font-medium text-xs lg:text-sm whitespace-nowrap">
+                    📊 동료 평가 결과 확인
+                </button>
+            </nav>
+
+            <!-- Teacher Only Nav -->
+            <nav id="teacherNav" class="teacher-only hidden md:flex items-center space-x-1 shrink-0">
+                <button type="button" onclick="switchView('student')" class="nav-btn px-1.5 lg:px-2 py-1 rounded-lg hover:bg-white/20 transition font-semibold text-[11px] lg:text-xs whitespace-nowrap cursor-pointer active-nav">학생 제출</button>
+                
+                <!-- ✍️ 동료 평가 + Quick Toggle -->
+                <div class="flex items-center bg-white/10 p-0.5 rounded-lg border border-white/20">
+                    <button type="button" onclick="switchView('peerEvalParticipate')" class="nav-btn px-1.5 lg:px-2 py-1 rounded-lg hover:bg-white/20 transition font-semibold text-[11px] lg:text-xs whitespace-nowrap cursor-pointer">✍️ 동료 평가</button>
+                    <label class="relative inline-flex items-center cursor-pointer px-1" title="학생 동료 평가 참여 활성화/비활성화 (클릭 시 자동 저장 및 학생 화면 즉시 반영)">
+                        <input type="checkbox" id="headerTogglePeerPart" onchange="quickTogglePeerSetting('enablePeerEvalPart', this.checked)" class="sr-only peer" checked>
+                        <div class="w-7 h-4 bg-white/30 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-emerald-400"></div>
+                    </label>
+                </div>
+
+                <!-- 📊 평가 결과 + Quick Toggle -->
+                <div class="flex items-center bg-white/10 p-0.5 rounded-lg border border-white/20">
+                    <button type="button" onclick="switchView('peerEvalResult')" class="nav-btn px-1.5 lg:px-2 py-1 rounded-lg hover:bg-white/20 transition font-semibold text-[11px] lg:text-xs whitespace-nowrap cursor-pointer">📊 평가 결과</button>
+                    <label class="relative inline-flex items-center cursor-pointer px-1" title="학생 동료 평가 결과 확인 활성화/비활성화 (클릭 시 자동 저장 및 학생 화면 즉시 반영)">
+                        <input type="checkbox" id="headerTogglePeerRes" onchange="quickTogglePeerSetting('enablePeerEvalResult', this.checked)" class="sr-only peer" checked>
+                        <div class="w-7 h-4 bg-white/30 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-emerald-400"></div>
+                    </label>
+                </div>
+
+                <button type="button" onclick="switchView('aiFeedback')" class="nav-btn px-1.5 lg:px-2 py-1 rounded-lg hover:bg-white/20 transition font-semibold text-[11px] lg:text-xs whitespace-nowrap cursor-pointer">🤖 AI 피드백</button>
+                <button type="button" onclick="switchView('classVote')" class="nav-btn px-1.5 lg:px-2 py-1 rounded-lg hover:bg-white/20 transition font-semibold text-[11px] lg:text-xs whitespace-nowrap cursor-pointer">반별 선정</button>
+                <button type="button" onclick="switchView('gradeVote')" class="nav-btn px-1.5 lg:px-2 py-1 rounded-lg hover:bg-white/20 transition font-semibold text-[11px] lg:text-xs whitespace-nowrap cursor-pointer">학년 선정</button>
+                <button type="button" onclick="switchView('compare')" class="nav-btn px-1.5 lg:px-2 py-1 rounded-lg hover:bg-white/20 transition font-semibold text-[11px] lg:text-xs whitespace-nowrap cursor-pointer">🔍 원본과 비교</button>
+                <button type="button" onclick="switchView('settings')" class="nav-btn px-1.5 lg:px-2 py-1 rounded-lg hover:bg-white/20 transition font-semibold text-[11px] lg:text-xs whitespace-nowrap cursor-pointer">설정</button>
+            </nav>
+
+            <!-- Mobile menu button for teacher -->
+            <button type="button" id="mobileMenuBtn" class="teacher-only hidden text-white focus:outline-none shrink-0 cursor-pointer"
+                onclick="document.getElementById('mobileMenu').classList.toggle('hidden')">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16">
+                    </path>
+                </svg>
+            </button>
+        </div>
+        <!-- Mobile Menu -->
+        <div id="mobileMenu" class="teacher-only hidden md:hidden bg-indigo-800 px-4 pt-2 pb-4 space-y-2">
+            <button type="button" onclick="switchView('student'); document.getElementById('mobileMenu').classList.add('hidden')"
+                class="block w-full text-left px-3 py-2 rounded hover:bg-indigo-600 font-semibold text-sm">학생 제출</button>
+            
+            <div class="flex items-center justify-between px-3 py-2 rounded hover:bg-indigo-600">
+                <button type="button" onclick="switchView('peerEvalParticipate'); document.getElementById('mobileMenu').classList.add('hidden')"
+                    class="font-semibold text-sm text-left flex-grow">✍️ 동료 평가 참여</button>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="mobileTogglePeerPart" onchange="quickTogglePeerSetting('enablePeerEvalPart', this.checked)" class="sr-only peer" checked>
+                    <div class="w-8 h-4 bg-indigo-900 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-emerald-400"></div>
+                </label>
+            </div>
+
+            <div class="flex items-center justify-between px-3 py-2 rounded hover:bg-indigo-600">
+                <button type="button" onclick="switchView('peerEvalResult'); document.getElementById('mobileMenu').classList.add('hidden')"
+                    class="font-semibold text-sm text-left flex-grow">📊 동료 평가 결과 확인</button>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="mobileTogglePeerRes" onchange="quickTogglePeerSetting('enablePeerEvalResult', this.checked)" class="sr-only peer" checked>
+                    <div class="w-8 h-4 bg-indigo-900 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-emerald-400"></div>
+                </label>
+            </div>
+
+            <button type="button" onclick="switchView('aiFeedback'); document.getElementById('mobileMenu').classList.add('hidden')"
+                class="block w-full text-left px-3 py-2 rounded hover:bg-indigo-600 font-semibold text-sm">🤖 AI 피드백</button>
+            <button type="button" onclick="switchView('classVote'); document.getElementById('mobileMenu').classList.add('hidden')"
+                class="block w-full text-left px-3 py-2 rounded hover:bg-indigo-600 font-semibold text-sm">반별 선정</button>
+            <button type="button" onclick="switchView('gradeVote'); document.getElementById('mobileMenu').classList.add('hidden')"
+                class="block w-full text-left px-3 py-2 rounded hover:bg-indigo-600 font-semibold text-sm">학년 선정</button>
+            <button type="button" onclick="switchView('compare'); document.getElementById('mobileMenu').classList.add('hidden')"
+                class="block w-full text-left px-3 py-2 rounded hover:bg-indigo-600 font-semibold text-sm">🔍 원본과 비교</button>
+            <button type="button" onclick="switchView('settings'); document.getElementById('mobileMenu').classList.add('hidden')"
+                class="block w-full text-left px-3 py-2 rounded hover:bg-indigo-600 font-semibold text-sm">설정</button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow max-w-6xl mx-auto px-4 py-8 w-full">
+
+        <!-- Loading Overlay -->
+        <div id="loadingOverlay"
+            class="fixed inset-0 bg-white/80 z-50 flex flex-col justify-center items-center hidden">
+            <div class="loader mb-4"></div>
+            <p class="text-lg font-medium text-slate-600 animate-pulse">데이터를 불러오는 중입니다...</p>
+        </div>
+
+        <!-- 1. Student View -->
+        <section id="studentView" class="view-section active max-w-3xl mx-auto">
+            <div class="glass-panel p-8 rounded-2xl mb-8">
+                <h2
+                    class="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 mb-6">
+                    내 파트 번역하기</h2>
+                <p class="text-slate-500 mb-8 leading-relaxed">자신의 반, 모둠, 그리고 담당 역할을 선택하면 번역해야 할 우리말 문장이 나타납니다. 다른 모둠원들과
+                    협력하여 멋진 영문 번역(영어 문장)을 만들어 보세요!</p>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">🎈 반 선택</label>
+                        <select id="studentClass"
+                            class="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition shadow-sm"></select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">👥 모둠 선택</label>
+                        <select id="studentGroup"
+                            class="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition shadow-sm"></select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">🎭 담당 역할</label>
+                        <select id="studentRole"
+                            class="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition shadow-sm"></select>
+                    </div>
+                </div>
+                <button onclick="loadStudentLyrics()"
+                    class="w-full md:w-auto px-8 py-3 bg-blue-600 text-white font-bold rounded-xl shadow-lg hover:bg-blue-700 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200">
+                    문장 불러오기
+                </button>
+            </div>
+
+            <div id="studentFormArea" class="hidden space-y-6">
+                <!-- Lyrics cards will be injected here -->
+            </div>
+
+            <div id="studentSubmitArea" class="hidden mt-8 text-center">
+                <button onclick="submitStudentForm()"
+                    class="px-10 py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-lg font-bold rounded-xl shadow-xl hover:from-green-600 hover:to-emerald-700 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
+                    ✨ 최종 번역 제출하기
+                </button>
+            </div>
+
+            <div id="studentSuccessArea"
+                class="hidden mt-8 text-center glass-panel p-12 rounded-2xl transform transition-all">
+                <div class="text-6xl mb-4">🎉</div>
+                <h3 class="text-2xl font-bold text-slate-800 mb-2">제출이 완료되었습니다!</h3>
+                <p class="text-slate-500">멋진 번역 고마워요. 이제 화면을 닫거나 교실 앞 화면을 주목해 주세요.</p>
+                <div class="mt-6">
+                    <button onclick="loadStudentLyrics()"
+                        class="px-6 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg transition text-sm">
+                        ✏️ 번역 수정 / 다시 보기
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Peer Evaluation Participation View -->
+        <section id="peerEvalParticipateView" class="view-section max-w-3xl mx-auto">
+            <div id="peerPartDisabledNotice" class="hidden p-4 mb-6 bg-amber-50 border border-amber-200 rounded-2xl text-amber-900 flex items-center gap-3 shadow-sm">
+                <span class="text-3xl">🔒</span>
+                <div>
+                    <p class="font-extrabold text-base">동료 평가 참여가 현재 비활성화되어 있습니다.</p>
+                    <p class="text-xs text-amber-700 mt-0.5">선생님이 동료 평가를 시작(활성화)하면 본 페이지에서 평가에 참여하실 수 있습니다.</p>
+                </div>
+            </div>
+            <div class="glass-panel p-8 rounded-2xl mb-8">
+                <h2 class="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600 mb-4">
+                    ✍️ 동료 평가 참여
+                </h2>
+                <p class="text-slate-500 mb-6 leading-relaxed">
+                    다른 모둠 학생이 작성한 영어 번역 문장 2개(<strong>동일한 역할 1문장</strong> + <strong>다른 역할 1문장</strong>)를 평가합니다.<br>
+                    객관식 3점 만점(어법, 어휘, 표현각 1점씩)과 따뜻하고 구체적인 피드백 설명을 작성해 보세요!
+                </p>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">🎈 반 선택</label>
+                        <select id="peerPartClass" class="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition shadow-sm"></select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">👥 모둠 선택</label>
+                        <select id="peerPartGroup" class="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition shadow-sm"></select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">🎭 내 담당 역할</label>
+                        <select id="peerPartRole" class="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition shadow-sm"></select>
+                    </div>
+                </div>
+                <button onclick="loadPeerEvalParticipate()" class="w-full md:w-auto px-8 py-3 bg-purple-600 text-white font-bold rounded-xl shadow-lg hover:bg-purple-700 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200 cursor-pointer">
+                    ✍️ 평가 문장 불러오기
+                </button>
+            </div>
+
+            <div id="peerPartFormArea" class="hidden space-y-8">
+                <!-- Evaluation Cards injected here -->
+            </div>
+
+            <div id="peerPartSubmitArea" class="hidden mt-8 text-center">
+                <button onclick="submitPeerEvalParticipate()" class="px-10 py-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-lg font-bold rounded-xl shadow-xl hover:from-purple-700 hover:to-indigo-700 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 cursor-pointer">
+                    ✨ 동료 평가 최종 제출하기
+                </button>
+            </div>
+
+            <div id="peerPartSuccessArea" class="hidden mt-8 text-center glass-panel p-12 rounded-2xl">
+                <div class="text-6xl mb-4">🌟</div>
+                <h3 class="text-2xl font-bold text-slate-800 mb-2">동료 평가 제출이 완료되었습니다!</h3>
+                <p class="text-slate-500">동료에게 정성 어린 피드백을 전달했습니다. 함께 성장해 나가요!</p>
+            </div>
+        </section>
+
+        <!-- Peer Evaluation Result Check View -->
+        <section id="peerEvalResultView" class="view-section max-w-4xl mx-auto">
+            <div id="peerResDisabledNotice" class="hidden p-4 mb-6 bg-amber-50 border border-amber-200 rounded-2xl text-amber-900 flex items-center gap-3 shadow-sm">
+                <span class="text-3xl">🔒</span>
+                <div>
+                    <p class="font-extrabold text-base">동료 평가 결과 확인이 현재 비활성화되어 있습니다.</p>
+                    <p class="text-xs text-amber-700 mt-0.5">선생님이 평가 결과를 공개(활성화)하면 받은 동료 피드백을 확인하실 수 있습니다.</p>
+                </div>
+            </div>
+            <div class="glass-panel p-8 rounded-2xl mb-8">
+                <h2 class="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-600 mb-4">
+                    📊 동료 평가 결과 확인
+                </h2>
+                <p class="text-slate-500 mb-6 leading-relaxed">
+                    본인이 작성하여 제출한 영어 문장에 대해 동료들이 부여한 평가 점수(3점 만점)와 작성해 준 피드백 설명을 확인해 보세요!
+                </p>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">🎈 반 선택</label>
+                        <select id="peerResClass" class="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition shadow-sm"></select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">👥 모둠 선택</label>
+                        <select id="peerResGroup" class="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition shadow-sm"></select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">🎭 내 담당 역할</label>
+                        <select id="peerResRole" class="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition shadow-sm"></select>
+                    </div>
+                </div>
+                <button onclick="loadPeerEvalResults()" class="w-full md:w-auto px-8 py-3 bg-emerald-600 text-white font-bold rounded-xl shadow-lg hover:bg-emerald-700 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200 cursor-pointer">
+                    📊 결과 확인하기
+                </button>
+            </div>
+
+            <div id="peerResContainer" class="space-y-6">
+                <!-- Evaluation result cards injected here -->
+            </div>
+        </section>
+
+        <!-- 2. AI Feedback View -->
+        <section id="aiFeedbackView" class="view-section">
+            <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+                <div>
+                    <h2 class="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-teal-600 to-emerald-600">
+                        🤖 AI 번역 피드백 (Grammar / Vocabulary / Expression)
+                    </h2>
+                    <p class="text-slate-500 mt-2">학생들이 제출한 영어 번역 문장에 대해 ChatGPT와 Claude AI가 전문적인 피드백을 제공합니다.</p>
+                </div>
+                
+                <div class="flex flex-wrap items-center gap-3 bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+                    <div class="flex items-center gap-2">
+                        <label class="font-semibold text-slate-700 text-sm">반 선택:</label>
+                        <select id="aiClassSelect" onchange="loadAiFeedbackList()" class="p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 font-medium bg-slate-50 min-w-[90px]"></select>
+                    </div>
+                    
+                    <div class="flex items-center gap-2">
+                        <label class="font-semibold text-slate-700 text-sm">AI 엔진:</label>
+                        <select id="aiEngineSelect" class="p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 font-medium bg-slate-50">
+                            <option value="chatgpt">ChatGPT (gpt-4o)</option>
+                            <option value="claude">Claude (claude-3-5-sonnet)</option>
+                        </select>
+                    </div>
+
+                    <button id="aiGenerateBtn" onclick="runAiFeedbackGeneration()" class="px-5 py-2.5 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white font-bold rounded-lg shadow-md transition-all text-sm flex items-center gap-1.5 cursor-pointer">
+                        <span>⚡ AI 피드백 생성 / 업데이트</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- AI Feedback List Container -->
+            <div id="aiFeedbackContainer" class="space-y-6">
+                <!-- AI feedback cards loaded here -->
+            </div>
+        </section>
+
+        <!-- 3. Class Voting View -->
+        <section id="classVoteView" class="view-section">
+            <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+                <div>
+                    <h2
+                        class="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">
+                        반별 베스트 선정 🏆</h2>
+                    <p class="text-slate-500 mt-2">제출된 모둠들의 번역을 비교하고 최고의 문장을 선택하세요.</p>
+                </div>
+                <div class="flex items-center gap-4 bg-white p-2 rounded-xl border shadow-sm">
+                    <label class="font-semibold text-slate-700 pl-2">반 선택:</label>
+                    <select id="voteClassSelect" onchange="loadClassAnswers()"
+                        class="p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 font-medium bg-slate-50 min-w-[100px]"></select>
+                </div>
+            </div>
+
+            <div id="classLyricsList" class="space-y-6">
+                <!-- Lyrics with groups' submissions -->
+                <p class="text-center text-slate-500 py-10 glass-panel rounded-xl">반을 선택하면 데이터가 표시됩니다.</p>
+            </div>
+
+            <div class="mt-12 text-center pb-12" id="classResultBtnArea" style="display: none;">
+                <button onclick="showLeaderboard()"
+                    class="px-10 py-4 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-xl font-extrabold rounded-2xl shadow-xl border-b-4 border-orange-600 hover:bg-orange-600 hover:shadow-2xl hover:-translate-y-1 active:translate-y-0 active:border-b-0 transition-all">
+                    🎉 최종 1~3등 결과 발표
+                </button>
+            </div>
+        </section>
+
+        <!-- 3. Grade Voting View -->
+        <section id="gradeVoteView" class="view-section">
+            <div class="mb-8">
+                <h2
+                    class="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-rose-600 to-red-600">
+                    학년 베스트 선정 👑</h2>
+                <p class="text-slate-500 mt-2">각 반에서 선정된 대표 문장들을 모아 최종 학년 베스트를 결정합니다.</p>
+            </div>
+
+            <div class="text-center mb-8">
+                <button onclick="loadGradeAnswers()"
+                    class="px-6 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition shadow">데이터
+                    새로고침</button>
+            </div>
+
+            <div id="gradeLyricsList" class="space-y-6">
+                <!-- Data here -->
+            </div>
+        </section>
+
+        <!-- 4. Compare View -->
+        <section id="compareView" class="view-section">
+            <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+                <div>
+                    <h2 class="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600">
+                        🔍 원본 문장 vs 최종 선정 문장 비교
+                    </h2>
+                    <p class="text-slate-500 mt-2">공식 원본 영어 문장과 학년 최종 대표 선정 문장을 나란히 비교합니다. (차이나는 표현은 <mark class="bg-yellow-300 text-yellow-950 px-1.5 py-0.5 rounded font-bold">노란색 형광펜</mark>으로 표시됩니다)</p>
+                </div>
+                <div>
+                    <button onclick="loadComparisonList()" class="px-5 py-2.5 bg-purple-700 hover:bg-purple-800 text-white font-bold rounded-xl shadow transition text-sm flex items-center gap-1.5 cursor-pointer">
+                        <span>🔄 비교 데이터 새로고침</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Comparison List Area -->
+            <div id="compareListContainer" class="space-y-6">
+                <!-- Comparison cards injected here -->
+            </div>
+        </section>
+
+        <!-- 5. Settings View -->
+        <section id="settingsView" class="view-section max-w-2xl mx-auto">
+            <div class="glass-panel p-8 rounded-2xl">
+                <h2 class="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                    <svg class="w-6 h-6 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z">
+                        </path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                    시스템 설정
+                </h2>
+
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">반이름 나열 (쉼표로 구분) (예: 1반, 2반, 3반 또는 A반, B반)</label>
+                        <input type="text" id="setClasses"
+                            class="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-500 font-medium"
+                            placeholder="1반, 2반, 3반">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">반별 모둠 수 (최대) (예: 8)</label>
+                        <input type="number" id="setNumGroups"
+                            class="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-500 font-medium">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">모둠원 역할 배정 (쉼표로 구분)</label>
+                        <input type="text" id="setRoles"
+                            class="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-slate-500 font-medium"
+                            placeholder="A, B, C, D">
+                        <p class="text-xs text-slate-500 mt-2">* 첫 번째 시트에 입력하는 영어 문장의 '담당 역할'과 일치해야 합니다.</p>
+                    </div>
+
+                    <div class="pt-4 border-t border-slate-200">
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">🔑 ChatGPT API Key (OpenAI - B5셀)</label>
+                        <input type="password" id="setChatGptKey"
+                            class="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-teal-500 font-mono text-sm"
+                            placeholder="sk-...">
+                        <p class="text-xs text-slate-500 mt-1">* gpt-4o 최신 플래그십 고성능 모델을 사용하여 학생 피드백을 생성합니다.</p>
+                    </div>
+
+                    <div class="pt-4 border-t border-slate-200">
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">🔑 Claude API Key (Anthropic - B6셀)</label>
+                        <input type="password" id="setClaudeKey"
+                            class="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-teal-500 font-mono text-sm"
+                            placeholder="sk-ant-...">
+                        <p class="text-xs text-slate-500 mt-1">* claude-3-5-sonnet 최신 최고성능 모델을 사용하여 학생 피드백을 생성합니다.</p>
+                    </div>
+
+                    <div class="pt-4 border-t border-slate-200">
+                        <label class="block text-sm font-extrabold text-slate-800 mb-3 flex items-center gap-1.5">
+                            <span>📢 학생 메뉴 기능 활성화 관리 (교사 권한)</span>
+                        </label>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <!-- 동료 평가 참여 활성화 -->
+                            <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between shadow-sm">
+                                <div>
+                                    <p class="font-bold text-sm text-slate-800">✍️ 동료 평가 참여</p>
+                                    <p class="text-xs text-slate-500 mt-0.5">학생 동료 평가 작성 탭 활성화</p>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="setEnablePeerEvalPart" class="sr-only peer" checked>
+                                    <div class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                                </label>
+                            </div>
+
+                            <!-- 동료 평가 결과 확인 활성화 -->
+                            <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between shadow-sm">
+                                <div>
+                                    <p class="font-bold text-sm text-slate-800">📊 동료 평가 결과 확인</p>
+                                    <p class="text-xs text-slate-500 mt-0.5">학생 평가 결과 확인 탭 활성화</p>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="setEnablePeerEvalResult" class="sr-only peer" checked>
+                                    <div class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pt-4 border-t border-slate-200">
+                        <button onclick="saveSettings()"
+                            class="w-full py-3 bg-slate-800 text-white font-bold rounded-xl shadow hover:bg-slate-900 transition">저장하기</button>
+                    </div>
+
+                    <div class="pt-4 border-t border-slate-200 mt-8">
+                        <h3 class="text-sm font-bold text-red-600 mb-2">테스트 데이터 초기화 (위험)</h3>
+                        <button onclick="clearTestData()"
+                            class="px-4 py-2 bg-red-100 text-red-700 text-sm font-bold rounded-lg border border-red-300 hover:bg-red-200 transition">모든
+                            제출 및 투표 기록 지우기</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Presentation Modal -->
+    <div id="presentationModal"
+        class="fixed inset-0 z-[100] bg-slate-50 hidden flex-col overflow-y-auto w-full h-full pb-20">
+        <div class="p-6 md:p-8 flex justify-between items-center bg-white border-b shadow-sm sticky top-0 z-10 w-full">
+            <div class="flex items-center gap-4">
+                <span id="pmSeq"
+                    class="inline-flex items-center justify-center w-14 h-14 bg-indigo-100 text-indigo-700 rounded-full text-2xl font-black"></span>
+                <span id="pmRole" class="text-xl md:text-2xl text-slate-500 font-bold uppercase tracking-widest"></span>
+            </div>
+            <div class="flex items-center gap-3">
+                <button id="pmSaveBtn" onclick="saveFromPresentationMode()"
+                    class="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-lg font-bold transition shadow-md flex items-center gap-2">
+                    <span>💾 선택 항목 시트 저장</span>
+                </button>
+                <button onclick="closePresentationMode()"
+                    class="px-6 py-3 bg-slate-800 text-white hover:bg-slate-900 rounded-xl text-lg font-bold transition shadow-md">닫기
+                    ✖</button>
+            </div>
+        </div>
+        <div class="p-8 md:p-12 flex-grow flex flex-col items-center w-full">
+            <h2 id="pmOriginal"
+                class="text-4xl md:text-6xl font-serif text-slate-900 font-extrabold mb-12 text-center leading-tight">
+            </h2>
+            <div id="pmAnswersGrid" class="w-full max-w-screen-2xl grid gap-8">
+                <!-- Data injected here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaderboard Modal -->
+    <div id="leaderboardModal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeLeaderboard()"></div>
+        <div class="relative bg-white pt-10 pb-12 px-8 w-full max-w-lg mx-4 rounded-3xl shadow-2xl transform transition-all text-center border-4 border-amber-300"
+            style="background: radial-gradient(circle, white, #fffbeb);">
+            <button onclick="closeLeaderboard()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                    </path>
+                </svg>
+            </button>
+
+            <h2 class="text-4xl font-black mb-8 text-amber-500 drop-shadow-sm font-serif italic" id="lbClassTitle">1반
+                랭킹보드</h2>
+
+            <div id="lbContent" class="space-y-4">
+                <!-- 1, 2, 3 places injected here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Text Zoom Modal -->
+    <div id="textZoomModal" class="fixed inset-0 z-[150] hidden items-center justify-center p-4 md:p-8 cursor-pointer select-none" onclick="closeTextZoomModal()">
+        <div class="absolute inset-0 bg-slate-950/80 backdrop-blur-md"></div>
+        <div class="relative bg-white text-slate-900 w-full max-w-4xl p-8 md:p-14 rounded-3xl shadow-2xl border-4 border-indigo-400 text-center transform transition-all overflow-hidden flex flex-col items-center justify-center min-h-[280px] max-h-[85vh] overflow-y-auto" onclick="closeTextZoomModal()">
+            <button onclick="event.stopPropagation(); closeTextZoomModal();" class="absolute top-5 right-5 w-12 h-12 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-full flex items-center justify-center text-2xl font-bold transition shadow-sm" title="닫기 (X)">
+                ✕
+            </button>
+            <span id="zoomModalLabel" class="inline-block px-4 py-1.5 bg-indigo-100 text-indigo-700 text-base md:text-lg font-bold rounded-full mb-6"></span>
+            <p id="zoomModalText" class="text-3xl md:text-5xl lg:text-6xl font-medium font-serif leading-snug break-words text-slate-800 tracking-wide mb-6"></p>
+            <div id="zoomModalActionArea" class="mt-4 mb-4" onclick="event.stopPropagation()"></div>
+            <p class="mt-2 text-slate-400 text-xs md:text-sm">💡 바탕 화면이나 X 버튼을 누르면 창이 닫힙니다.</p>
+        </div>
+    </div>
+
+    <!-- Compare Zoom Modal -->
+    <div id="compareZoomModal" class="fixed inset-0 z-[160] bg-slate-950/80 backdrop-blur-md hidden items-center justify-center p-4 md:p-8" onclick="closeCompareZoomModal()">
+        <div class="bg-white rounded-3xl p-6 md:p-10 max-w-5xl w-full max-h-[90vh] overflow-y-auto shadow-2xl relative border border-slate-100 flex flex-col justify-between" onclick="event.stopPropagation()">
+            <button onclick="closeCompareZoomModal()" class="absolute top-6 right-6 w-10 h-10 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-full flex items-center justify-center font-bold text-xl transition cursor-pointer">
+                ✕
+            </button>
+
+            <div class="mb-6 border-b pb-4 border-slate-100">
+                <div class="flex items-center gap-3 mb-2">
+                    <span id="compZoomSeq" class="w-10 h-10 bg-purple-600 text-white font-black text-xl rounded-full flex items-center justify-center"></span>
+                    <span id="compZoomSource" class="px-3 py-1 bg-emerald-100 text-emerald-700 text-xs font-bold rounded-full"></span>
+                </div>
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">우리말 문장</p>
+                <h3 id="compZoomKorean" class="text-xl md:text-2xl font-serif font-bold text-slate-800"></h3>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 my-4">
+                <!-- Left: Original English -->
+                <div class="p-6 bg-slate-50 rounded-2xl border border-slate-200">
+                    <p class="text-xs md:text-sm font-extrabold text-slate-500 uppercase tracking-wider mb-3">📜 공식 원본 영어 문장</p>
+                    <p id="compZoomOriginal" class="text-2xl md:text-4xl font-serif font-medium leading-relaxed text-slate-800 break-words"></p>
+                </div>
+
+                <!-- Right: Grade Best with Yellow Diff Marker -->
+                <div class="p-6 bg-purple-50/50 rounded-2xl border border-purple-200">
+                    <p class="text-xs md:text-sm font-extrabold text-purple-700 uppercase tracking-wider mb-3 flex justify-between items-center">
+                        <span>👑 학년 대표 선정 문장</span>
+                        <span class="text-xs bg-yellow-200 text-yellow-950 font-bold px-2 py-0.5 rounded shadow-sm">노란색 = 차이점</span>
+                    </p>
+                    <div id="compZoomSelected" class="text-2xl md:text-4xl font-serif font-medium leading-relaxed text-slate-900 break-words"></div>
+                </div>
+            </div>
+
+            <p class="mt-6 text-center text-slate-400 text-xs md:text-sm">💡 바탕 화면이나 X 버튼을 누르면 창이 닫힙니다.</p>
+        </div>
+    </div>
+
+    <!-- PDF Handout Modal -->
+    <div id="pdfHandoutModal" class="fixed inset-0 z-[160] bg-slate-950/80 backdrop-blur-md hidden items-center justify-center p-4 md:p-6" onclick="closePdfHandoutModal()">
+        <div class="bg-white rounded-3xl p-6 md:p-8 max-w-5xl w-full max-h-[92vh] overflow-y-auto shadow-2xl relative border border-slate-100 flex flex-col justify-between" onclick="event.stopPropagation()">
+            <button onclick="closePdfHandoutModal()" class="absolute top-6 right-6 w-10 h-10 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-full flex items-center justify-center font-bold text-xl transition cursor-pointer">
+                ✕
+            </button>
+
+            <div>
+                <div class="flex items-center gap-3 mb-2">
+                    <span class="w-10 h-10 bg-slate-800 text-white font-black text-xl rounded-full flex items-center justify-center shadow-md">📄</span>
+                    <div>
+                        <h3 class="text-2xl font-extrabold text-slate-800">한영 번역 마스터 유인물 (A4 가로 / 흑백 / 10문장 단위)</h3>
+                        <p class="text-slate-500 text-xs md:text-sm mt-0.5">인쇄 창에서 대상 프린터를 'PDF로 저장'으로 선택하면 PDF 파일로 다운로드됩니다.</p>
+                    </div>
+                </div>
+
+                <div class="my-4 flex flex-wrap justify-between items-center bg-slate-50 p-4 rounded-2xl border border-slate-200 gap-3">
+                    <div class="text-xs text-slate-800 font-medium">
+                        📌 <strong>A4 가로 흑백 규격</strong> | 컬럼 비율 <strong>1 : 2 : 2</strong> (우리말 18% : 내 영어문장 35% : 영어정답 35%) | 페이지당 <strong>10문장 배치</strong>
+                    </div>
+                    <button onclick="printHandoutPdf()" class="px-6 py-2.5 bg-slate-900 hover:bg-black text-white font-bold rounded-xl shadow-lg transition flex items-center gap-2 cursor-pointer text-sm">
+                        <span>🖨️ PDF 저장 / 인쇄하기</span>
+                    </button>
+                </div>
+
+                <!-- Handout Preview Container -->
+                <div id="pdfHandoutPreview" class="border border-slate-200 rounded-2xl p-4 bg-slate-100 max-h-[55vh] overflow-y-auto space-y-6">
+                    <!-- Live Preview Pages -->
+                </div>
+            </div>
+
+            <div class="mt-4 pt-4 border-t border-slate-100 flex justify-between items-center">
+                <span class="text-xs text-slate-400">💡 [🖨️ PDF 저장 / 인쇄하기] 버튼을 누르면 A4 가로 인쇄 창이 열립니다.</span>
+                <button onclick="closePdfHandoutModal()" class="px-5 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl text-sm transition cursor-pointer">
+                    닫기
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isGoogleEnv = typeof google !== 'undefined' && google.script;
+        let appSettings = {
+            classes: ['1반', '2반', '3반'],
+            numClasses: 3,
+            numGroups: 8,
+            roles: ['A', 'B', 'C', 'D'],
+            chatGptKey: '',
+            claudeKey: '',
+            enablePeerEvalPart: true,
+            enablePeerEvalResult: true
+        };
+        let currentStudentLyrics = [];
+        let currentPMType = null;
+        let currentPMSeq = null;
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function handleGlobalError(err) {
+            showLoading(false);
+            const errMsg = (err && err.message) ? err.message : (err || '요청 처리 중 오류가 발생했습니다.');
+            alert('⚠️ ' + errMsg);
+        }
+
+        let currentZoomData = null;
+
+        function openTextZoomModal(label, text, contextObj) {
+            if (!text) return;
+            currentZoomData = contextObj || null;
+            document.getElementById('zoomModalLabel').innerText = label || '';
+            document.getElementById('zoomModalText').innerText = text;
+            
+            renderZoomModalAction();
+
+            const modal = document.getElementById('textZoomModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function renderZoomModalAction() {
+            const area = document.getElementById('zoomModalActionArea');
+            if (!area) return;
+            area.innerHTML = '';
+
+            if (!currentZoomData) return;
+
+            if (currentZoomData.type === 'class') {
+                const { seq, g, trans } = currentZoomData;
+                const item = currentClassData.find(i => i.seq == seq);
+                const isSelected = item && item.bestGroups && item.bestGroups.includes(g);
+
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = `px-6 py-3 rounded-2xl transition-all duration-200 flex items-center justify-center gap-3 mx-auto cursor-pointer shadow-md border-2 ${
+                    isSelected 
+                        ? 'bg-emerald-500 text-white border-emerald-600 shadow-emerald-200 scale-105' 
+                        : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
+                }`;
+                
+                btn.innerHTML = `
+                    <span class="text-base font-bold">🏆 [${g}모둠] 반 대표 문장 선정</span>
+                    <div class="w-12 h-6 rounded-full p-0.5 transition-colors duration-200 flex items-center ${isSelected ? 'bg-white/40 justify-end' : 'bg-slate-300 justify-start'}">
+                        <div class="w-5 h-5 bg-white rounded-full shadow-md transform transition-transform"></div>
+                    </div>
+                    <span class="text-sm font-black tracking-wide">${isSelected ? 'ON (선정됨)' : 'OFF (미선정)'}</span>
+                `;
+                
+                btn.onclick = (e) => {
+                    e.stopPropagation();
+                    toggleGroupSelection(seq, g, trans);
+                    renderZoomModalAction();
+                };
+                area.appendChild(btn);
+
+            } else if (currentZoomData.type === 'grade') {
+                const { seq, cName, bestText } = currentZoomData;
+                const item = currentGradeData.find(i => i.seq == seq);
+                const isSelected = item && (item.gradeBestSource === cName);
+
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = `px-6 py-3 rounded-2xl transition-all duration-200 flex items-center justify-center gap-3 mx-auto cursor-pointer shadow-md border-2 ${
+                    isSelected 
+                        ? 'bg-emerald-500 text-white border-emerald-600 shadow-emerald-200 scale-105' 
+                        : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
+                }`;
+                
+                btn.innerHTML = `
+                    <span class="text-base font-bold">👑 [${cName}] 학년 대표 문장 선정</span>
+                    <div class="w-12 h-6 rounded-full p-0.5 transition-colors duration-200 flex items-center ${isSelected ? 'bg-white/40 justify-end' : 'bg-slate-300 justify-start'}">
+                        <div class="w-5 h-5 bg-white rounded-full shadow-md transform transition-transform"></div>
+                    </div>
+                    <span class="text-sm font-black tracking-wide">${isSelected ? 'ON (선정됨)' : 'OFF (미선정)'}</span>
+                `;
+                
+                btn.onclick = (e) => {
+                    e.stopPropagation();
+                    setGradeSelection(seq, cName, bestText);
+                    if (item) {
+                        item.gradeBestSource = cName;
+                        item.gradeBest = bestText;
+                    }
+                    renderZoomModalAction();
+                };
+                area.appendChild(btn);
+            }
+        }
+
+        function closeTextZoomModal() {
+            const modal = document.getElementById('textZoomModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            document.body.style.overflow = 'auto';
+        }
+
+        let serverPageMode = "<?= pageMode ?>";
+        let isStudentMode = false;
+        let webAppServiceUrl = "";
+
+        function applyViewMode() {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (serverPageMode === 'student' || urlParams.get('page') === 'student' || urlParams.get('mode') === 'student') {
+                isStudentMode = true;
+            }
+
+            const studentNav = document.getElementById('studentNav');
+            const teacherNav = document.getElementById('teacherNav');
+            const mobileBtn = document.getElementById('mobileMenuBtn');
+            const mobileMenu = document.getElementById('mobileMenu');
+            const copyBtn = document.getElementById('copyStudentUrlBtn');
+            const pdfBtn = document.getElementById('pdfHandoutBtn');
+            const headerTitle = document.getElementById('headerTitle');
+
+            if (isStudentMode) {
+                if (studentNav) { studentNav.classList.remove('hidden'); studentNav.style.setProperty('display', 'flex', 'important'); }
+                if (teacherNav) { teacherNav.classList.add('hidden'); teacherNav.style.setProperty('display', 'none', 'important'); }
+                if (mobileBtn) { mobileBtn.classList.add('hidden'); mobileBtn.style.setProperty('display', 'none', 'important'); }
+                if (mobileMenu) { mobileMenu.classList.add('hidden'); mobileMenu.style.setProperty('display', 'none', 'important'); }
+                if (copyBtn) { copyBtn.classList.add('hidden'); copyBtn.style.setProperty('display', 'none', 'important'); }
+                if (pdfBtn) { pdfBtn.classList.add('hidden'); pdfBtn.style.setProperty('display', 'none', 'important'); }
+                if (headerTitle) headerTitle.innerText = '🎤 한영 번역 마스터';
+            } else {
+                if (studentNav) { studentNav.classList.add('hidden'); studentNav.style.setProperty('display', 'none', 'important'); }
+                if (teacherNav) { teacherNav.classList.remove('hidden'); teacherNav.style.removeProperty('display'); }
+                if (mobileBtn) { mobileBtn.classList.remove('hidden'); mobileBtn.style.removeProperty('display'); }
+                if (copyBtn) { copyBtn.classList.remove('hidden'); copyBtn.style.setProperty('display', 'inline-flex', 'important'); }
+                if (pdfBtn) { pdfBtn.classList.remove('hidden'); pdfBtn.style.setProperty('display', 'inline-flex', 'important'); }
+                if (headerTitle) headerTitle.innerText = '🎤 한영 번역 마스터 (교사용)';
+            }
+        }
+
+        function updateStudentNavState() {
+            const partBtn = document.getElementById('studentNavPeerPartBtn');
+            const resBtn = document.getElementById('studentNavPeerResBtn');
+            const isPartEnabled = (appSettings.enablePeerEvalPart !== false);
+            const isResEnabled = (appSettings.enablePeerEvalResult !== false);
+
+            if (partBtn) {
+                if (!isPartEnabled) {
+                    partBtn.classList.add('opacity-50');
+                    partBtn.title = '현재 교사에 의해 비활성화됨';
+                    partBtn.innerHTML = '✍️ 동료 평가 참여 <span class="text-[10px] text-amber-300 font-bold ml-0.5">🔒</span>';
+                } else {
+                    partBtn.classList.remove('opacity-50');
+                    partBtn.title = '';
+                    partBtn.innerHTML = '✍️ 동료 평가 참여';
+                }
+            }
+
+            if (resBtn) {
+                if (!isResEnabled) {
+                    resBtn.classList.add('opacity-50');
+                    resBtn.title = '현재 교사에 의해 비활성화됨';
+                    resBtn.innerHTML = '📊 동료 평가 결과 확인 <span class="text-[10px] text-amber-300 font-bold ml-0.5">🔒</span>';
+                } else {
+                    resBtn.classList.remove('opacity-50');
+                    resBtn.title = '';
+                    resBtn.innerHTML = '📊 동료 평가 결과 확인';
+                }
+            }
+        }
+
+        function quickTogglePeerSetting(key, isEnabled) {
+            appSettings[key] = !!isEnabled;
+            updateToggleSwitchesUI();
+            updateStudentNavState();
+
+            if (isGoogleEnv) {
+                google.script.run
+                    .withSuccessHandler(res => {
+                        if (res && res.settings) {
+                            appSettings = res.settings;
+                            updateToggleSwitchesUI();
+                            updateStudentNavState();
+                        }
+                    })
+                    .withFailureHandler(err => {
+                        console.error('Auto-save error:', err);
+                    })
+                    .savePeerEvalActivation(key, isEnabled);
+            }
+        }
+
+        function updateToggleSwitchesUI() {
+            const hPart = document.getElementById('headerTogglePeerPart');
+            const hRes = document.getElementById('headerTogglePeerRes');
+            const mPart = document.getElementById('mobileTogglePeerPart');
+            const mRes = document.getElementById('mobileTogglePeerRes');
+            const sPart = document.getElementById('setEnablePeerEvalPart');
+            const sRes = document.getElementById('setEnablePeerEvalResult');
+
+            const isPartEnabled = appSettings.enablePeerEvalPart !== false;
+            const isResEnabled = appSettings.enablePeerEvalResult !== false;
+
+            if (hPart) hPart.checked = isPartEnabled;
+            if (hRes) hRes.checked = isResEnabled;
+            if (mPart) mPart.checked = isPartEnabled;
+            if (mRes) mRes.checked = isResEnabled;
+            if (sPart) sPart.checked = isPartEnabled;
+            if (sRes) sRes.checked = isResEnabled;
+        }
+
+        let pollTimer = null;
+        function startStudentAutoPolling() {
+            if (pollTimer) clearInterval(pollTimer);
+            pollTimer = setInterval(pollStudentActivationStatus, 3000);
+        }
+
+        function pollStudentActivationStatus() {
+            if (!isStudentMode || !isGoogleEnv) return;
+            google.script.run
+                .withSuccessHandler(res => {
+                    if (res) {
+                        let changed = false;
+                        if (appSettings.enablePeerEvalPart !== res.enablePeerEvalPart) {
+                            appSettings.enablePeerEvalPart = res.enablePeerEvalPart;
+                            changed = true;
+                        }
+                        if (appSettings.enablePeerEvalResult !== res.enablePeerEvalResult) {
+                            appSettings.enablePeerEvalResult = res.enablePeerEvalResult;
+                            changed = true;
+                        }
+                        if (changed) {
+                            updateStudentNavState();
+                            const activeSection = document.querySelector('.view-section.active');
+                            if (activeSection) {
+                                if (activeSection.id === 'peerEvalParticipateView') populatePeerEvalDropdowns('Part');
+                                if (activeSection.id === 'peerEvalResultView') populatePeerEvalDropdowns('Res');
+                            }
+                        }
+                    }
+                })
+                .withFailureHandler(() => {})
+                .getPeerEvalActivationStatus();
+        }
+
+        // -- Initialization --
+        document.addEventListener('DOMContentLoaded', () => {
+            applyViewMode();
+
+            showLoading(true);
+            if (isGoogleEnv) {
+                google.script.run
+                    .withSuccessHandler(res => {
+                        appSettings = res.settings;
+                        webAppServiceUrl = res.webAppUrl || '';
+                        populateDropdowns();
+                        updateStudentNavState();
+                        updateToggleSwitchesUI();
+                        showLoading(false);
+                        if (isStudentMode) {
+                            switchView('student');
+                            startStudentAutoPolling();
+                        }
+                    })
+                    .withFailureHandler(handleGlobalError)
+                    .getInitialData();
+            } else {
+                populateDropdowns();
+                updateStudentNavState();
+                updateToggleSwitchesUI();
+                showLoading(false);
+                if (isStudentMode) {
+                    switchView('student');
+                    startStudentAutoPolling();
+                }
+            }
+        });
+
+        function copyStudentUrl() {
+            let studentUrl = "";
+            if (webAppServiceUrl) {
+                studentUrl = webAppServiceUrl + (webAppServiceUrl.includes('?') ? '&' : '?') + 'page=student';
+            } else {
+                const loc = window.location.href.split('#')[0];
+                studentUrl = loc + (loc.includes('?') ? '&' : '?') + 'page=student';
+            }
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(studentUrl).then(() => {
+                    alert('📋 학생 전용 제출 주소가 복사되었습니다!\n\n학생들에게 아래 주소를 공유해 주세요:\n\n' + studentUrl);
+                }).catch(() => {
+                    prompt('아래 학생 전용 주소를 복사(Ctrl+C)하세요:', studentUrl);
+                });
+            } else {
+                prompt('아래 학생 전용 주소를 복사(Ctrl+C)하세요:', studentUrl);
+            }
+        }
+
+        function showLoading(show) {
+            const el = document.getElementById('loadingOverlay');
+            if (show) el.classList.remove('hidden');
+            else el.classList.add('hidden');
+        }
+
+        function switchView(viewId) {
+            try {
+                if (isStudentMode) {
+                    if (viewId !== 'student' && viewId !== 'peerEvalParticipate' && viewId !== 'peerEvalResult') {
+                        return;
+                    }
+                    if (viewId === 'peerEvalParticipate' && appSettings.enablePeerEvalPart === false) {
+                        alert("현재 선생님에 의해 '동료 평가 참여' 기능이 비활성화되어 있습니다.");
+                        return;
+                    }
+                    if (viewId === 'peerEvalResult' && appSettings.enablePeerEvalResult === false) {
+                        alert("현재 선생님에 의해 '동료 평가 결과 확인' 기능이 비활성화되어 있습니다.");
+                        return;
+                    }
+                }
+
+                document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+                const targetEl = document.getElementById(viewId + 'View');
+                if (targetEl) {
+                    targetEl.classList.add('active');
+                } else {
+                    console.warn('Target view section not found:', viewId + 'View');
+                }
+
+                // Update teacher nav highlighting
+                document.querySelectorAll('.nav-btn').forEach(el => {
+                    el.classList.remove('bg-white/20');
+                    const onclickAttr = String(el.getAttribute('onclick') || '');
+                    if (onclickAttr.indexOf("'" + viewId + "'") !== -1 || onclickAttr.indexOf('"' + viewId + '"') !== -1) {
+                        el.classList.add('bg-white/20');
+                    }
+                });
+
+                // Update student nav highlighting
+                document.querySelectorAll('.student-nav-btn').forEach(el => {
+                    el.classList.remove('bg-white/20');
+                    const onclickAttr = String(el.getAttribute('onclick') || '');
+                    if (onclickAttr.indexOf("'" + viewId + "'") !== -1 || onclickAttr.indexOf('"' + viewId + '"') !== -1) {
+                        el.classList.add('bg-white/20');
+                    }
+                });
+
+                if (viewId === 'student') populateDropdowns();
+                if (viewId === 'peerEvalParticipate') populatePeerEvalDropdowns('Part');
+                if (viewId === 'peerEvalResult') populatePeerEvalDropdowns('Res');
+                if (viewId === 'aiFeedback') updateAiFeedbackClassDropdown();
+                if (viewId === 'classVote') updateClassVoteDropdown();
+                if (viewId === 'gradeVote') loadGradeAnswers();
+                if (viewId === 'compare') loadComparisonList();
+                if (viewId === 'settings') loadSettingsForm();
+            } catch (err) {
+                console.error('Error switching view:', err);
+            }
+        }
+
+        function populateDropdowns() {
+            const clsSel = document.getElementById('studentClass');
+            const grpSel = document.getElementById('studentGroup');
+            const roleSel = document.getElementById('studentRole');
+
+            if (clsSel && grpSel && roleSel) {
+                clsSel.innerHTML = ''; grpSel.innerHTML = ''; roleSel.innerHTML = '';
+                (appSettings.classes || []).forEach(c => clsSel.add(new Option(c, c)));
+                for (let i = 1; i <= appSettings.numGroups; i++) grpSel.add(new Option(i + '모둠', i));
+                (appSettings.roles || []).forEach(c => roleSel.add(new Option(c, c)));
+            }
+        }
+
+        function populatePeerEvalDropdowns(prefix) {
+            if (prefix === 'Part') {
+                const notice = document.getElementById('peerPartDisabledNotice');
+                if (notice) {
+                    if (appSettings.enablePeerEvalPart === false) notice.classList.remove('hidden');
+                    else notice.classList.add('hidden');
+                }
+            }
+            if (prefix === 'Res') {
+                const notice = document.getElementById('peerResDisabledNotice');
+                if (notice) {
+                    if (appSettings.enablePeerEvalResult === false) notice.classList.remove('hidden');
+                    else notice.classList.add('hidden');
+                }
+            }
+
+            const clsSel = document.getElementById(`peer${prefix}Class`);
+            const grpSel = document.getElementById(`peer${prefix}Group`);
+            const roleSel = document.getElementById(`peer${prefix}Role`);
+
+            if (!clsSel || !grpSel || !roleSel) return;
+            clsSel.innerHTML = ''; grpSel.innerHTML = ''; roleSel.innerHTML = '';
+
+            (appSettings.classes || []).forEach(c => clsSel.add(new Option(c, c)));
+            for (let i = 1; i <= appSettings.numGroups; i++) grpSel.add(new Option(i + '모둠', i));
+            (appSettings.roles || []).forEach(c => roleSel.add(new Option(c, c)));
+        }
+
+        // --- Peer Evaluation Participation ---
+        let currentPeerEvalCandidates = [];
+        let currentPeerEvaluatorData = {};
+
+        function loadPeerEvalParticipate() {
+            const classNum = document.getElementById('peerPartClass').value;
+            const groupNum = document.getElementById('peerPartGroup').value;
+            const role = document.getElementById('peerPartRole').value;
+
+            if (!role) return alert('역할을 선택해주세요.');
+
+            currentPeerEvaluatorData = { classNum, groupNum, role };
+            showLoading(true);
+
+            if (isGoogleEnv) {
+                google.script.run
+                    .withSuccessHandler(renderPeerEvalParticipate)
+                    .withFailureHandler(handleGlobalError)
+                    .getPeerEvalSentencesToEvaluate(classNum, groupNum, role);
+            } else {
+                setTimeout(() => {
+                    renderPeerEvalParticipate({
+                        alreadyEvaluated: false,
+                        targetSameRole: {
+                            seq: 1,
+                            group: 2,
+                            role: role,
+                            korean: '나는 그저 가난한 소년일 뿐입니다.',
+                            translation: 'I am just a poor boy'
+                        },
+                        targetDiffRole: {
+                            seq: 2,
+                            group: 3,
+                            role: 'B',
+                            korean: '내 이야기는 거의 전해지지 않지만,',
+                            translation: 'Though my story is seldom told'
+                        }
+                    });
+                }, 500);
+            }
+        }
+
+        function renderPeerEvalParticipate(res) {
+            showLoading(false);
+            const container = document.getElementById('peerPartFormArea');
+            const submitArea = document.getElementById('peerPartSubmitArea');
+            const successArea = document.getElementById('peerPartSuccessArea');
+
+            container.innerHTML = '';
+            successArea.classList.add('hidden');
+
+            if (!res || !res.alreadyEvaluated && !res.targetSameRole && !res.targetDiffRole && !res.message) {
+                container.innerHTML = `
+                    <div class="p-6 bg-amber-50 text-amber-900 rounded-2xl text-center font-medium border border-amber-200 space-y-2">
+                        <p class="text-base font-bold">💡 평가할 다른 학생들의 제출 문장이 아직 없습니다.</p>
+                        <p class="text-xs text-amber-700">해당 학급에 다른 모둠 학생들이 영문 번역을 제출한 뒤 다시 '평가 문장 불러오기'를 진행해 주세요.</p>
+                    </div>
+                `;
+                container.classList.remove('hidden');
+                submitArea.classList.add('hidden');
+                return;
+            }
+
+            if (res.alreadyEvaluated) {
+                let html = `
+                    <div class="glass-panel p-6 rounded-2xl border-l-4 border-emerald-500 mb-6">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="text-2xl">✅</span>
+                            <h3 class="text-xl font-bold text-slate-800">동료 평가 제출 완료됨</h3>
+                        </div>
+                        <p class="text-slate-600 text-sm">선생님 및 동료들에게 이미 평가를 전달하셨습니다. 작성하신 평가 내역입니다.</p>
+                    </div>
+                `;
+
+                (res.evaluations || []).forEach(ev => {
+                    const totalScore = (ev.grammarScore ? 1 : 0) + (ev.vocabScore ? 1 : 0) + (ev.exprScore ? 1 : 0);
+                    html += `
+                        <div class="glass-panel p-6 rounded-2xl border border-slate-200 space-y-4">
+                            <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+                                <span class="px-3 py-1 bg-purple-100 text-purple-800 text-xs font-bold rounded-full">
+                                    ${ev.evalType === '동일역할' ? '📌 [동일 역할] ' + ev.targetRole + '역할' : '💡 [다른 역할] ' + ev.targetRole + '역할 (' + ev.targetGroup + '모둠)'}
+                                </span>
+                                <span class="text-amber-500 font-black text-sm">⭐ ${totalScore} / 3.0점</span>
+                            </div>
+                            <p class="text-lg font-serif font-medium text-slate-800">🇰🇷 ${escapeHtml(ev.korean)}</p>
+                            <div class="p-4 bg-blue-50/60 rounded-xl border border-blue-100">
+                                <p class="text-xs font-bold text-blue-600 mb-1">🇬🇧 피평가 학생의 영어 번역</p>
+                                <p class="text-blue-950 font-serif text-base">${escapeHtml(ev.targetTranslation)}</p>
+                            </div>
+                            <div class="flex flex-wrap gap-2 text-xs font-bold">
+                                <span class="px-2.5 py-1 ${ev.grammarScore ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-400'} rounded-md">어법(Grammar): ${ev.grammarScore ? '1점' : '0점'}</span>
+                                <span class="px-2.5 py-1 ${ev.vocabScore ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-400'} rounded-md">어휘(Vocabulary): ${ev.vocabScore ? '1점' : '0점'}</span>
+                                <span class="px-2.5 py-1 ${ev.exprScore ? 'bg-purple-100 text-purple-800' : 'bg-slate-100 text-slate-400'} rounded-md">표현(Expression): ${ev.exprScore ? '1점' : '0점'}</span>
+                            </div>
+                            <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                                <p class="text-xs font-bold text-slate-400 mb-1">💬 작성한 객관식 점수 설명 및 제안</p>
+                                <p class="text-sm text-slate-800 font-medium">${escapeHtml(ev.comment || '-')}</p>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                container.innerHTML = html;
+                container.classList.remove('hidden');
+                submitArea.classList.add('hidden');
+                return;
+            }
+
+            if (res.message) {
+                container.innerHTML = `
+                    <div class="p-6 bg-amber-50 text-amber-900 rounded-2xl text-center font-medium border border-amber-200 space-y-2">
+                        <p class="text-base font-bold">💡 ${escapeHtml(res.message)}</p>
+                        <p class="text-xs text-amber-700">해당 학급의 다른 모둠 학생들이 영문 번역 제출을 마치면 동료 평가가 시작됩니다.</p>
+                    </div>
+                `;
+                container.classList.remove('hidden');
+                submitArea.classList.add('hidden');
+                return;
+            }
+
+            currentPeerEvalCandidates = [];
+            if (res.targetSameRole) {
+                res.targetSameRole.evalType = '동일역할';
+                currentPeerEvalCandidates.push(res.targetSameRole);
+            }
+            if (res.targetDiffRole) {
+                res.targetDiffRole.evalType = '다른역할';
+                currentPeerEvalCandidates.push(res.targetDiffRole);
+            }
+
+            if (currentPeerEvalCandidates.length === 0) {
+                container.innerHTML = `<div class="p-6 bg-amber-50 text-amber-800 rounded-2xl text-center font-medium border border-amber-200">평가할 다른 학생의 제출 문장이 없습니다.</div>`;
+                container.classList.remove('hidden');
+                submitArea.classList.add('hidden');
+                return;
+            }
+
+            currentPeerEvalCandidates.forEach((item, idx) => {
+                const card = document.createElement('div');
+                card.className = "glass-panel p-6 rounded-2xl border-l-4 border-purple-500 shadow-sm space-y-4";
+
+                const isSame = (item.evalType === '동일역할');
+                const badgeTitle = isSame 
+                    ? `📌 [${idx + 1}/${currentPeerEvalCandidates.length}] 동일한 역할 (${item.role} 역할) 평가` 
+                    : `💡 [${idx + 1}/${currentPeerEvalCandidates.length}] 다른 역할 (${item.role} 역할) 평가`;
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <span class="px-3 py-1 bg-purple-100 text-purple-800 text-xs font-extrabold rounded-full">${badgeTitle}</span>
+                        <span id="scoreBadge_${idx}" class="text-purple-600 font-bold text-sm bg-purple-50 px-3 py-1 rounded-full border border-purple-200">⭐ 0점 / 3.0점</span>
+                    </div>
+
+                    <p class="text-xl font-serif font-medium text-slate-800">🇰🇷 ${escapeHtml(item.korean)}</p>
+
+                    <div class="p-4 bg-blue-50/70 rounded-xl border border-blue-100">
+                        <p class="text-xs font-bold text-blue-600 mb-1">🇬🇧 동료 학생의 영어 번역 문장</p>
+                        <p class="text-blue-950 font-serif text-lg font-medium">${escapeHtml(item.translation)}</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-2 uppercase tracking-wide">1. 객관식 점수 평가 (각 1점씩 / 3점 만점)</label>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <label class="p-3 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200 flex items-center gap-2 cursor-pointer transition select-none">
+                                <input type="checkbox" id="gScore_${idx}" onchange="updatePeerScoreSum(${idx})" class="w-4 h-4 text-purple-600 rounded border-slate-300 focus:ring-purple-500">
+                                <span class="text-xs md:text-sm font-semibold text-slate-800">📌 어법 (Grammar)</span>
+                            </label>
+                            <label class="p-3 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200 flex items-center gap-2 cursor-pointer transition select-none">
+                                <input type="checkbox" id="vScore_${idx}" onchange="updatePeerScoreSum(${idx})" class="w-4 h-4 text-purple-600 rounded border-slate-300 focus:ring-purple-500">
+                                <span class="text-xs md:text-sm font-semibold text-slate-800">📚 어휘 (Vocabulary)</span>
+                            </label>
+                            <label class="p-3 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200 flex items-center gap-2 cursor-pointer transition select-none">
+                                <input type="checkbox" id="eScore_${idx}" onchange="updatePeerScoreSum(${idx})" class="w-4 h-4 text-purple-600 rounded border-slate-300 focus:ring-purple-500">
+                                <span class="text-xs md:text-sm font-semibold text-slate-800">💡 표현 (Expression)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-2 uppercase tracking-wide">2. 객관식 점수 설명 및 제안</label>
+                        <textarea id="comment_${idx}" rows="2" class="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-purple-500 font-medium resize-none bg-slate-50/50" placeholder="위 점수를 부여한 이유 및 동료를 향한 구체적인 설명과 개선 제안을 적어주세요..."></textarea>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+
+            container.classList.remove('hidden');
+            submitArea.classList.remove('hidden');
+        }
+
+        function updatePeerScoreSum(idx) {
+            const g = document.getElementById(`gScore_${idx}`).checked ? 1 : 0;
+            const v = document.getElementById(`vScore_${idx}`).checked ? 1 : 0;
+            const e = document.getElementById(`eScore_${idx}`).checked ? 1 : 0;
+            const sum = g + v + e;
+            const badge = document.getElementById(`scoreBadge_${idx}`);
+            if (badge) {
+                badge.innerText = `⭐ ${sum}점 / 3.0점`;
+            }
+        }
+
+        function submitPeerEvalParticipate() {
+            if (currentPeerEvalCandidates.length === 0) return;
+
+            let evaluations = [];
+            let missingComment = false;
+
+            currentPeerEvalCandidates.forEach((item, idx) => {
+                const g = document.getElementById(`gScore_${idx}`).checked;
+                const v = document.getElementById(`vScore_${idx}`).checked;
+                const e = document.getElementById(`eScore_${idx}`).checked;
+                const comment = document.getElementById(`comment_${idx}`).value.trim();
+
+                if (!comment) missingComment = true;
+
+                evaluations.push({
+                    targetGroup: item.group,
+                    targetRole: item.role,
+                    targetSeq: item.seq,
+                    korean: item.korean,
+                    targetTranslation: item.translation,
+                    grammarScore: g,
+                    vocabScore: v,
+                    exprScore: e,
+                    comment: comment,
+                    evalType: item.evalType
+                });
+            });
+
+            if (missingComment) {
+                if (!confirm("객관식 점수 설명 및 제안을 작성하지 않은 문장이 있습니다. 이대로 제출하시겠습니까?")) return;
+            }
+
+            showLoading(true);
+            if (isGoogleEnv) {
+                google.script.run
+                    .withSuccessHandler(() => {
+                        showLoading(false);
+                        document.getElementById('peerPartFormArea').classList.add('hidden');
+                        document.getElementById('peerPartSubmitArea').classList.add('hidden');
+                        document.getElementById('peerPartSuccessArea').classList.remove('hidden');
+                        fireConfetti();
+                    })
+                    .withFailureHandler(handleGlobalError)
+                    .submitPeerEvaluation(currentPeerEvaluatorData, evaluations);
+            } else {
+                setTimeout(() => {
+                    showLoading(false);
+                    document.getElementById('peerPartFormArea').classList.add('hidden');
+                    document.getElementById('peerPartSubmitArea').classList.add('hidden');
+                    document.getElementById('peerPartSuccessArea').classList.remove('hidden');
+                    fireConfetti();
+                }, 500);
+            }
+        }
+
+        // --- Peer Evaluation Results View ---
+        function loadPeerEvalResults() {
+            const classNum = document.getElementById('peerResClass').value;
+            const groupNum = document.getElementById('peerResGroup').value;
+            const role = document.getElementById('peerResRole').value;
+
+            if (!role) return alert('역할을 선택해주세요.');
+
+            showLoading(true);
+            if (isGoogleEnv) {
+                google.script.run
+                    .withSuccessHandler(renderPeerEvalResults)
+                    .withFailureHandler(handleGlobalError)
+                    .getPeerEvaluationResults(classNum, groupNum, role);
+            } else {
+                setTimeout(() => {
+                    renderPeerEvalResults([
+                        {
+                            seq: 1,
+                            role: 'A',
+                            korean: '나는 그저 가난한 소년일 뿐입니다.',
+                            studentTranslation: 'I am just a poor boy',
+                            avgScore: 2.5,
+                            reviewCount: 2,
+                            reviews: [
+                                { evaluatorGroup: 2, evaluatorRole: 'A', grammarScore: 1, vocabScore: 1, exprScore: 1, totalScore: 3, comment: '시제와 원문의 뉘앙스가 완벽하게 맞습니다!', evalType: '동일역할' },
+                                { evaluatorGroup: 3, evaluatorRole: 'B', grammarScore: 1, vocabScore: 1, exprScore: 0, totalScore: 2, comment: '어휘가 아주 좋아요. 표현이 훌륭합니다.', evalType: '다른역할' }
+                            ]
+                        }
+                    ]);
+                }, 500);
+            }
+        }
+
+        function renderPeerEvalResults(data) {
+            showLoading(false);
+            const container = document.getElementById('peerResContainer');
+            if (!container) return;
+            container.innerHTML = '';
+
+            if (!data || data.length === 0) {
+                container.innerHTML = `<div class="glass-panel p-10 rounded-2xl text-center text-slate-500 font-medium">해당 담당 역할에 작성된 문장 데이터가 없습니다.</div>`;
+                return;
+            }
+
+            data.forEach(item => {
+                const card = document.createElement('div');
+                card.className = "glass-panel rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4";
+
+                const hasReviews = item.reviewCount > 0;
+                const scoreBadge = hasReviews
+                    ? `<span class="px-3 py-1 bg-amber-100 text-amber-800 font-black rounded-full text-xs md:text-sm shadow-sm">⭐ 평균 ${item.avgScore}점 / 3.0점 (총 ${item.reviewCount}개 평가)</span>`
+                    : `<span class="px-3 py-1 bg-slate-100 text-slate-500 text-xs font-medium rounded-full">아직 평가 받지 않음</span>`;
+
+                let reviewsHtml = '';
+                if (!hasReviews) {
+                    reviewsHtml = `<p class="text-xs text-slate-400 italic py-3">아직 이 문장에 대한 동료 평가가 작성되지 않았습니다.</p>`;
+                } else {
+                    item.reviews.forEach(r => {
+                        const isSame = (r.evalType === '동일역할');
+                        const evalRoleBadge = isSame
+                            ? `<span class="px-2.5 py-0.5 bg-purple-100 text-purple-800 text-xs font-bold rounded-md">📌 동일 역할 동료</span>`
+                            : `<span class="px-2.5 py-0.5 bg-indigo-100 text-indigo-800 text-xs font-bold rounded-md">💡 다른 역할 동료 (${escapeHtml(r.evaluatorRole)}역할 / ${r.evaluatorGroup}모둠)</span>`;
+
+                        reviewsHtml += `
+                            <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                                <div class="flex justify-between items-center">
+                                    ${evalRoleBadge}
+                                    <span class="text-amber-500 font-black text-sm">⭐ ${r.totalScore} / 3.0점</span>
+                                </div>
+                                <div class="flex flex-wrap gap-2 text-xs font-semibold text-slate-600 pt-1">
+                                    <span class="${r.grammarScore ? 'text-emerald-700 font-bold' : 'text-slate-400'}">📌 어법: ${r.grammarScore ? '1점' : '0점'}</span>
+                                    <span>|</span>
+                                    <span class="${r.vocabScore ? 'text-amber-700 font-bold' : 'text-slate-400'}">📚 어휘: ${r.vocabScore ? '1점' : '0점'}</span>
+                                    <span>|</span>
+                                    <span class="${r.exprScore ? 'text-purple-700 font-bold' : 'text-slate-400'}">💡 표현: ${r.exprScore ? '1점' : '0점'}</span>
+                                </div>
+                                <div class="pt-2 border-t border-slate-200/60">
+                                    <p class="text-xs md:text-sm text-slate-800 font-medium leading-relaxed">💬 "${escapeHtml(r.comment || '설명 없음')}"</p>
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+
+                card.innerHTML = `
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-3 border-b border-slate-100">
+                        <div class="flex items-center gap-2">
+                            <span class="px-3 py-1 bg-slate-800 text-white font-black rounded-full text-xs md:text-sm">${item.seq}번 문장</span>
+                            <span class="px-2.5 py-0.5 bg-slate-100 text-slate-600 font-bold rounded-md text-xs">Role ${item.role}</span>
+                        </div>
+                        ${scoreBadge}
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-slate-50/80 p-4 rounded-xl border border-slate-200">
+                            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">🇰🇷 우리말 원문</p>
+                            <p class="text-slate-800 font-serif font-medium text-base md:text-lg">${escapeHtml(item.korean)}</p>
+                        </div>
+                        <div class="bg-emerald-50/60 p-4 rounded-xl border border-emerald-100">
+                            <p class="text-[11px] font-bold text-emerald-700 uppercase tracking-wider mb-1">🇬🇧 내 영문 번역 제출안</p>
+                            <p class="text-emerald-950 font-serif font-medium text-base md:text-lg">${item.studentTranslation ? escapeHtml(item.studentTranslation) : '<span class="text-slate-300 italic text-sm">미제출</span>'}</p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-3 pt-2">
+                        <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">💌 동료 학생들의 피드백 리스트</p>
+                        <div class="space-y-3">
+                            ${reviewsHtml}
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // --- Student View ---
+        function loadStudentLyrics() {
+            const classNum = document.getElementById('studentClass').value;
+            const groupNum = document.getElementById('studentGroup').value;
+            const role = document.getElementById('studentRole').value;
+            if (!role) return alert('역할을 선택해주세요.');
+
+            showLoading(true);
+            if (isGoogleEnv) {
+                google.script.run
+                    .withSuccessHandler(renderStudentForm)
+                    .withFailureHandler(handleGlobalError)
+                    .getLyricsByRole(role, classNum, groupNum);
+            } else {
+                setTimeout(() => renderStudentForm([
+                    { seq: 1, role: 'A', lyric: 'I am just a poor boy', previousTranslation: '나는 그저 가난한 소년' },
+                    { seq: 5, role: 'A', lyric: 'Such are promises', previousTranslation: '' }
+                ]), 500);
+            }
+        }
+
+        function renderStudentForm(lyricsData) {
+            showLoading(false);
+            currentStudentLyrics = lyricsData;
+            const container = document.getElementById('studentFormArea');
+            container.innerHTML = '';
+
+            if (!lyricsData || lyricsData.length === 0) {
+                container.innerHTML = `<div class="p-6 bg-red-50 text-red-600 rounded-xl text-center font-medium">해당 역할에 배정된 문장이 없습니다.</div>`;
+            } else {
+                lyricsData.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'glass-panel p-6 rounded-2xl shadow-sm hover:shadow-md transition-shadow border-l-4 border-blue-500';
+                    const prevVal = item.previousTranslation || '';
+                    const badgeHtml = prevVal ? '<span class="inline-block px-2 py-0.5 bg-green-100 text-green-700 text-xs font-bold rounded-full ml-2">이전 제출 복원됨</span>' : '';
+
+                    div.innerHTML = `
+          <div class="mb-4 flex items-center justify-between">
+            <div>
+              <span class="inline-block px-3 py-1 bg-slate-100 text-slate-500 text-xs font-bold rounded-full">문장 ${item.seq}</span>
+              ${badgeHtml}
+            </div>
+          </div>
+          <p class="text-xl font-medium text-slate-800 break-words font-serif mb-3">🇰🇷 ${escapeHtml(item.korean || item.lyric)}</p>
+          <div>
+            <textarea id="ans_${item.seq}" rows="2" class="w-full p-4 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none bg-slate-50/50" placeholder="이곳에 영문 번역(영어 문장)을 입력해주세요...">${escapeHtml(prevVal)}</textarea>
+          </div>
+        `;
+                    container.appendChild(div);
+                });
+                document.getElementById('studentSubmitArea').classList.remove('hidden');
+            }
+            container.classList.remove('hidden');
+            document.getElementById('studentSuccessArea').classList.add('hidden');
+        }
+
+        function submitStudentForm() {
+            const classNum = document.getElementById('studentClass').value;
+            const groupNum = document.getElementById('studentGroup').value;
+            const role = document.getElementById('studentRole').value;
+
+            let answers = [];
+            let allFilled = true;
+            currentStudentLyrics.forEach(item => {
+                const val = document.getElementById(`ans_${item.seq}`).value.trim();
+                if (!val) allFilled = false;
+                answers.push({ seq: item.seq, translation: val });
+            });
+
+            if (!allFilled) {
+                if (!confirm("입력하지 않은 문장이 있습니다. 이대로 제출하시겠습니까?")) return;
+            }
+
+            const studentData = { classNum, groupNum, role };
+
+            showLoading(true);
+            if (isGoogleEnv) {
+                google.script.run
+                    .withSuccessHandler(() => {
+                        showLoading(false);
+                        showStudentSuccess();
+                    })
+                    .withFailureHandler(handleGlobalError)
+                    .submitTranslation(studentData, answers);
+            } else {
+                setTimeout(() => { showLoading(false); showStudentSuccess(); }, 500);
+            }
+        }
+
+        function showStudentSuccess() {
+            document.getElementById('studentFormArea').classList.add('hidden');
+            document.getElementById('studentSubmitArea').classList.add('hidden');
+            document.getElementById('studentSuccessArea').classList.remove('hidden');
+        }
+
+        // --- Class Voting View ---
+        let currentClassData = [];
+        function updateClassVoteDropdown() {
+            const sel = document.getElementById('voteClassSelect');
+            sel.innerHTML = '<option value="">선택</option>';
+            (appSettings.classes || []).forEach(c => {
+                sel.add(new Option(c, c));
+            });
+        }
+
+        function loadClassAnswers() {
+            const cNum = document.getElementById('voteClassSelect').value;
+            if (!cNum) return;
+
+            showLoading(true);
+            if (isGoogleEnv) {
+                google.script.run
+                    .withSuccessHandler(renderClassVoting)
+                    .withFailureHandler(handleGlobalError)
+                    .getSubmittedAnswers(cNum);
+            } else {
+                setTimeout(() => renderClassVoting([
+                    { seq: 1, role: 'A', lyric: 'I am just a poor boy', best: '난 가난한 소년이야', bestGroups: [2], submissions: { 1: '나는 가난한 소년', 2: '난 가난한 소년이야', 3: '그저 가난한 소년일 뿐', 8: '가난한 소년' } }
+                ]), 500);
+            }
+        }
+
+        function renderClassVoting(data) {
+            showLoading(false);
+            currentClassData = data;
+            const container = document.getElementById('classLyricsList');
+            container.innerHTML = '';
+
+            document.getElementById('classResultBtnArea').style.display = data.length ? 'block' : 'none';
+
+            if (!data || data.length === 0) {
+                container.innerHTML = `<p class="text-center text-slate-500 py-10 glass-panel rounded-xl">데이터가 없습니다. 첫 번째 시트를 확인해주세요.</p>`;
+                return;
+            }
+
+            data.forEach(item => {
+                const card = document.createElement('div');
+                card.className = "glass-panel rounded-2xl overflow-hidden border border-slate-200 shadow-sm";
+
+                const header = document.createElement('div');
+                header.className = "p-5 bg-gradient-to-r from-slate-50 to-white flex items-start gap-4 border-b border-slate-100";
+                header.innerHTML = `
+        <div class="flex-shrink-0 w-12 h-12 bg-indigo-100 text-indigo-700 rounded-full flex justify-center items-center font-black text-xl cursor-pointer hover:bg-indigo-600 hover:text-white transition shadow-sm hover:shadow-md transform hover:scale-110" onclick="showPresentationMode('class', ${item.seq})" title="전체화면 프레젠테이션 보기">${item.seq}</div>
+        <div class="flex-grow">
+          <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1">우리말 문장 <span>(${escapeHtml(item.role)})</span></p>
+          <p class="text-xl font-serif text-slate-800 font-medium">${escapeHtml(item.korean || item.lyric)}</p>
+        </div>
+      `;
+                card.appendChild(header);
+
+                const body = document.createElement('div');
+                body.className = "p-6 bg-white";
+
+                const ansGrid = document.createElement('div');
+                ansGrid.className = "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-6";
+
+                let selectedGroups = item.bestGroups || [];
+
+                for (let g = 1; g <= appSettings.numGroups; g++) {
+                    const trans = item.submissions[g] || false;
+                    const btn = document.createElement('button');
+                    btn.className = `p-3 rounded-xl border text-left text-sm transition-all relative group flex flex-col h-full 
+          ${trans ? 'hover:border-indigo-400 bg-white' : 'bg-slate-50 border-slate-100 opacity-50 cursor-not-allowed'}
+          ${selectedGroups.includes(g) ? 'ring-2 ring-indigo-500 border-indigo-500 bg-indigo-50/50' : 'border-slate-200'}
+        `;
+                    if (trans) {
+                        btn.onclick = () => {
+                            openTextZoomModal(`${item.seq}번 문장 (${g}모둠 제출안)`, trans, { type: 'class', seq: item.seq, g: g, trans: trans });
+                        };
+                    }
+
+                    btn.innerHTML = `
+          <span class="text-xs font-bold ${selectedGroups.includes(g) ? 'text-indigo-600' : 'text-slate-400'} mb-1">${g}모둠</span>
+          <span class="text-slate-800 break-words flex-grow">${trans ? escapeHtml(trans) : '<span class="text-slate-300 italic">미제출</span>'}</span>
+          ${selectedGroups.includes(g) ? '<div class="absolute top-2 right-2 w-3 h-3 bg-indigo-500 rounded-full"></div>' : ''}
+        `;
+                    btn.id = `btn_seq${item.seq}_g${g}`;
+                    ansGrid.appendChild(btn);
+                }
+                body.appendChild(ansGrid);
+
+                const editArea = document.createElement('div');
+                editArea.className = "bg-slate-50 rounded-xl p-4 border border-slate-200 mt-4 flex flex-col md:flex-row gap-4 items-stretch";
+                editArea.innerHTML = `
+        <div class="flex-grow">
+          <label class="block text-xs font-bold text-indigo-600 mb-2 uppercase tracking-wide">🏆 반 대표 베스트 영어 문장 조합/수정</label>
+          <textarea id="bestans_${item.seq}" rows="2" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 font-medium bg-white resize-none" placeholder="모둠의 정답을 선택하면 이곳에 복사됩니다. 자유롭게 다듬어 최종 영문 정답을 만드세요!">${escapeHtml(item.best || '')}</textarea>
+        </div>
+        <div class="flex items-end justify-end flex-shrink-0">
+          <button onclick="saveItemBest(${item.seq})" class="h-12 px-6 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition shadow-md w-full md:w-auto">
+            베스트 저장
+          </button>
+        </div>
+      `;
+                body.appendChild(editArea);
+
+                card.appendChild(body);
+                container.appendChild(card);
+            });
+        }
+
+        function toggleGroupSelection(seq, gNum, transText) {
+            let item = currentClassData.find(i => i.seq == seq);
+            if (!item) return;
+
+            if (!item.bestGroups) item.bestGroups = [];
+
+            const idx = item.bestGroups.indexOf(gNum);
+
+            item.bestGroups.forEach(oldGNum => {
+                if (oldGNum !== gNum) {
+                    const oldBtn = document.getElementById(`btn_seq${seq}_g${oldGNum}`);
+                    if (oldBtn) {
+                        oldBtn.classList.remove('ring-2', 'ring-indigo-500', 'border-indigo-500', 'bg-indigo-50/50');
+                        const oldText = oldBtn.querySelector('span:first-child');
+                        if (oldText) oldText.classList.replace('text-indigo-600', 'text-slate-400');
+                        const dot = oldBtn.querySelector('.absolute.bg-indigo-500');
+                        if (dot) dot.remove();
+                    }
+                }
+            });
+
+            if (idx > -1) {
+                item.bestGroups = [];
+                item.best = '';
+                const btn = document.getElementById(`btn_seq${seq}_g${gNum}`);
+                if (btn) {
+                    btn.classList.remove('ring-2', 'ring-indigo-500', 'border-indigo-500', 'bg-indigo-50/50');
+                    const gText = btn.querySelector('span:first-child');
+                    if (gText) gText.classList.replace('text-indigo-600', 'text-slate-400');
+                    const dot = btn.querySelector('.absolute.bg-indigo-500');
+                    if (dot) dot.remove();
+                }
+                const ta = document.getElementById(`bestans_${seq}`);
+                if (ta) ta.value = '';
+            } else {
+                item.bestGroups = [gNum];
+                item.best = transText;
+                const btn = document.getElementById(`btn_seq${seq}_g${gNum}`);
+                if (btn) {
+                    btn.classList.add('ring-2', 'ring-indigo-500', 'border-indigo-500', 'bg-indigo-50/50');
+                    const gText = btn.querySelector('span:first-child');
+                    if (gText) gText.classList.replace('text-slate-400', 'text-indigo-600');
+                    if (!btn.innerHTML.includes('bg-indigo-500')) {
+                        btn.innerHTML += '<div class="absolute top-2 right-2 w-3 h-3 bg-indigo-500 rounded-full"></div>';
+                    }
+                }
+
+                const ta = document.getElementById(`bestans_${seq}`);
+                if (ta) ta.value = transText;
+            }
+        }
+
+        function saveItemBest(seq) {
+            let item = currentClassData.find(i => i.seq == seq);
+            const cNum = document.getElementById('voteClassSelect').value;
+            const ta = document.getElementById(`bestans_${seq}`);
+            const bestVal = ta ? ta.value : (item ? item.best : '');
+
+            const btn = ta ? ta.parentElement.nextElementSibling.querySelector('button') : null;
+            const origText = btn ? btn.innerText : '';
+            if (btn) {
+                btn.innerText = "저장 중...";
+                btn.disabled = true;
+            }
+
+            const args = [cNum, seq, item.lyric || item.korean, bestVal, item.bestGroups || []];
+
+            if (isGoogleEnv) {
+                google.script.run
+                    .withSuccessHandler(() => {
+                        if (btn) {
+                            btn.innerText = "저장 완료!";
+                            btn.classList.replace('bg-indigo-600', 'bg-green-500');
+                            setTimeout(() => {
+                                btn.innerText = "베스트 저장";
+                                btn.classList.replace('bg-green-500', 'bg-indigo-600');
+                                btn.disabled = false;
+                            }, 2000);
+                        }
+                    })
+                    .withFailureHandler(err => {
+                        if (btn) { btn.innerText = origText; btn.disabled = false; }
+                        handleGlobalError(err);
+                    })
+                    .saveClassBest(...args);
+            } else {
+                setTimeout(() => { if (btn) { btn.innerText = "저장 완료!"; btn.disabled = false; } }, 1000);
+            }
+        }
+
+        function showLeaderboard() {
+            const cNum = document.getElementById('voteClassSelect').value;
+            if (!cNum) return;
+
+            showLoading(true);
+            if (isGoogleEnv) {
+                google.script.run
+                    .withSuccessHandler(renderLeaderboard)
+                    .withFailureHandler(handleGlobalError)
+                    .getLeaderboard(cNum);
+            } else {
+                setTimeout(() => renderLeaderboard([{ group: 2, count: 5 }, { group: 8, count: 4 }, { group: 1, count: 2 }]), 500);
+            }
+        }
+
+        function renderLeaderboard(data) {
+            showLoading(false);
+            const cNum = document.getElementById('voteClassSelect').value;
+            document.getElementById('lbClassTitle').innerText = `${cNum}반 랭킹보드`;
+
+            const container = document.getElementById('lbContent');
+            container.innerHTML = '';
+
+            if (!data || data.length === 0) {
+                container.innerHTML = '<p class="text-slate-500 py-8">아직 선정된 베스트 정답이 없습니다.</p>';
+            } else {
+                const top3 = data.slice(0, 3);
+                const medals = ['🥇', '🥈', '🥉'];
+                const colors = ['bg-yellow-100 border-yellow-400 text-yellow-800', 'bg-slate-100 border-slate-300 text-slate-700', 'bg-orange-50 border-orange-300 text-orange-800'];
+
+                top3.forEach((item, index) => {
+                    const div = document.createElement('div');
+                    div.className = `p-4 border-2 rounded-2xl flex items-center justify-between ${colors[index] || 'bg-white border-slate-200'} transform hover:scale-105 transition duration-300`;
+                    div.innerHTML = `
+          <div class="flex items-center gap-4">
+            <span class="text-4xl">${medals[index] || '🎊'}</span>
+            <span class="text-2xl font-bold">${item.group}모둠</span>
+          </div>
+          <div class="bg-white/50 px-4 py-2 rounded-xl font-bold font-mono">
+            ${item.count} Point
+          </div>
+        `;
+                    container.appendChild(div);
+                });
+            }
+
+            document.getElementById('leaderboardModal').classList.remove('hidden');
+            fireConfetti();
+        }
+
+        function closeLeaderboard() {
+            document.getElementById('leaderboardModal').classList.add('hidden');
+        }
+
+        function fireConfetti() {
+            var duration = 3 * 1000;
+            var animationEnd = Date.now() + duration;
+            var defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 60 };
+
+            function randomInRange(min, max) { return Math.random() * (max - min) + min; }
+            var interval = setInterval(function () {
+                var timeLeft = animationEnd - Date.now();
+                if (timeLeft <= 0) return clearInterval(interval);
+                var particleCount = 50 * (timeLeft / duration);
+                confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } }));
+                confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } }));
+            }, 250);
+        }
+
+        // --- Grade Voting View ---
+        let currentGradeData = [];
+        function loadGradeAnswers() {
+            showLoading(true);
+            if (isGoogleEnv) {
+                google.script.run
+                    .withSuccessHandler(renderGradeVoting)
+                    .withFailureHandler(handleGlobalError)
+                    .getAllClassesBest();
+            } else {
+                setTimeout(() => renderGradeVoting([
+                    {
+                        seq: 1, lyric: 'I am just a poor boy', gradeBest: '전 그저 가난한 소년', gradeBestSource: '1반', classBests: {
+                            1: { best: '전 그저 가난한 소년', groups: '2' },
+                            2: { best: '나 가난한 남자아이', groups: '8' },
+                            3: { best: '나는 가난해', groups: '1,3' }
+                        }
+                    }
+                ]), 500);
+            }
+        }
+
+        function renderGradeVoting(data) {
+            showLoading(false);
+            currentGradeData = data;
+            const container = document.getElementById('gradeLyricsList');
+            container.innerHTML = '';
+
+            if (!data || data.length === 0) {
+                container.innerHTML = `<p class="text-center text-slate-500 py-10 glass-panel rounded-xl">데이터가 없습니다.</p>`;
+                return;
+            }
+
+            data.forEach(item => {
+                const card = document.createElement('div');
+                card.className = "glass-panel rounded-2xl overflow-hidden border border-slate-200 shadow-sm relative";
+                if (item.gradeBest) {
+                    card.classList.add('border-emerald-400', 'ring-1', 'ring-emerald-400');
+                    const badge = document.createElement('div');
+                    badge.className = "absolute top-4 right-4 bg-emerald-100 text-emerald-700 text-xs font-bold px-3 py-1 rounded-full shadow-sm";
+                    badge.innerHTML = '✨ 학년 최종 완료';
+                    card.appendChild(badge);
+                }
+
+                const header = document.createElement('div');
+                header.className = "p-5 bg-gradient-to-r from-slate-50 to-white flex items-start gap-4 border-b border-slate-100";
+                header.innerHTML = `
+        <div class="flex-shrink-0 w-12 h-12 ${item.gradeBest ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'} rounded-full flex justify-center items-center font-black text-xl cursor-pointer hover:bg-slate-800 hover:text-white transition shadow-sm hover:shadow-md transform hover:scale-110" onclick="showPresentationMode('grade', ${item.seq})" title="전체화면 프레젠테이션 보기">${item.seq}</div>
+        <div class="flex-grow pr-20">
+          <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1">우리말 문장</p>
+          <p class="text-xl font-serif text-slate-800 font-medium">${escapeHtml(item.korean || item.lyric)}</p>
+        </div>
+      `;
+                card.appendChild(header);
+
+                const body = document.createElement('div');
+                body.className = "p-6 bg-white";
+
+                const ansGrid = document.createElement('div');
+                ansGrid.className = "grid grid-cols-1 md:grid-cols-3 gap-4 mb-6";
+
+                let classSource = item.gradeBestSource || '';
+
+                (appSettings.classes || []).forEach(cName => {
+                    const cBestObj = item.classBests ? item.classBests[cName] : null;
+                    const isGradeSelected = (classSource === cName);
+
+                    const btn = document.createElement('button');
+                    btn.id = `btn_grade_seq${item.seq}_class${cName}`;
+                    btn.className = `p-4 rounded-xl border text-left transition-all h-full flex flex-col items-start
+          ${cBestObj && cBestObj.best ? 'hover:shadow-md bg-white cursor-pointer' : 'bg-slate-50 border-slate-100 opacity-50 cursor-not-allowed'}
+          ${isGradeSelected ? 'ring-2 ring-emerald-500 border-emerald-500 bg-emerald-50/30' : 'border-slate-200'}
+        `;
+
+                    if (cBestObj && cBestObj.best) {
+                        btn.onclick = () => {
+                            openTextZoomModal(`${item.seq}번 문장 (${cName} 대표 정답)`, cBestObj.best, { type: 'grade', seq: item.seq, cName: cName, bestText: cBestObj.best });
+                        };
+                    }
+
+                    btn.innerHTML = `
+          <div class="flex items-center gap-2 mb-2 w-full">
+            <span class="px-2 py-0.5 bg-slate-100 text-slate-600 text-xs font-bold rounded">${escapeHtml(cName)} 베스트</span>
+            ${cBestObj && cBestObj.groups ? `<span class="text-[10px] text-slate-400">by ${escapeHtml(String(cBestObj.groups))}모둠</span>` : ''}
+          </div>
+          <p class="text-slate-800 font-medium flex-grow w-full whitespace-pre-wrap">${cBestObj && cBestObj.best ? escapeHtml(cBestObj.best) : '<span class="text-slate-300 italic text-sm">미선정</span>'}</p>
+          ${isGradeSelected ? '<div class="grade-selected-badge mt-2 text-emerald-600 text-xs font-bold flex items-center gap-1"><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg> 학년 대표 선정됨</div>' : ''}
+        `;
+                    ansGrid.appendChild(btn);
+                });
+                body.appendChild(ansGrid);
+
+                const editArea = document.createElement('div');
+                editArea.className = "bg-rose-50/30 rounded-xl p-4 border border-rose-100 mt-2 flex flex-col sm:flex-row gap-4";
+                editArea.innerHTML = `
+        <div class="flex-grow">
+          <label class="block text-[10px] font-bold text-rose-600 uppercase mb-1">최종 학년 베스트 정답</label>
+          <input type="text" id="gradeans_${item.seq}" value="${escapeHtml(item.gradeBest || '')}" class="w-full p-2 border border-slate-300 rounded focus:ring-1 focus:ring-rose-500 text-sm font-medium bg-white">
+        </div>
+        <div class="w-32">
+           <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">대표 반(출처)</label>
+           <input type="text" id="gradesource_${item.seq}" value="${escapeHtml(item.gradeBestSource || '')}" class="w-full p-2 border border-slate-300 rounded focus:ring-1 focus:ring-slate-500 text-sm text-center font-medium bg-slate-50">
+        </div>
+        <div class="flex items-end">
+          <button onclick="saveItemGradeBest(${item.seq})" class="h-9 px-6 bg-slate-800 text-white text-sm font-bold rounded hover:bg-slate-900 transition whitespace-nowrap">
+            최종 픽 저장
+          </button>
+        </div>
+      `;
+                body.appendChild(editArea);
+
+                card.appendChild(body);
+                container.appendChild(card);
+            });
+        }
+
+        function setGradeSelection(seq, source, text) {
+            let item = currentGradeData.find(i => i.seq == seq);
+            if (!item) return;
+
+            if (item.gradeBestSource === source) {
+                item.gradeBestSource = '';
+                item.gradeBest = '';
+            } else {
+                item.gradeBestSource = source;
+                item.gradeBest = text;
+            }
+
+            const ansInput = document.getElementById(`gradeans_${seq}`);
+            const srcInput = document.getElementById(`gradesource_${seq}`);
+            if (ansInput) ansInput.value = item.gradeBest;
+            if (srcInput) srcInput.value = item.gradeBestSource;
+
+            updateGradeCardUI(seq);
+        }
+
+        function updateGradeCardUI(seq) {
+            const item = currentGradeData.find(i => i.seq == seq);
+            if (!item) return;
+
+            (appSettings.classes || []).forEach(cName => {
+                const btn = document.getElementById(`btn_grade_seq${seq}_class${cName}`);
+                if (btn) {
+                    const isGradeSelected = (item.gradeBestSource === cName);
+                    const cBestObj = item.classBests ? item.classBests[cName] : null;
+                    const hasBest = cBestObj && cBestObj.best;
+
+                    if (isGradeSelected) {
+                        btn.className = `p-4 rounded-xl border text-left transition-all h-full flex flex-col items-start ring-2 ring-emerald-500 border-emerald-500 bg-emerald-50/30 cursor-pointer shadow-md`;
+                    } else {
+                        btn.className = `p-4 rounded-xl border text-left transition-all h-full flex flex-col items-start border-slate-200 ${hasBest ? 'hover:shadow-md bg-white cursor-pointer' : 'bg-slate-50 border-slate-100 opacity-50 cursor-not-allowed'}`;
+                    }
+
+                    let badgeEl = btn.querySelector('.grade-selected-badge');
+                    if (isGradeSelected) {
+                        if (!badgeEl) {
+                            const badge = document.createElement('div');
+                            badge.className = "grade-selected-badge mt-2 text-emerald-600 text-xs font-bold flex items-center gap-1";
+                            badge.innerHTML = `<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg> 학년 대표 선정됨`;
+                            btn.appendChild(badge);
+                        }
+                    } else {
+                        if (badgeEl) badgeEl.remove();
+                    }
+                }
+            });
+        }
+
+        function saveItemGradeBest(seq) {
+            const item = currentGradeData.find(i => i.seq == seq);
+            const ansEl = document.getElementById(`gradeans_${seq}`);
+            const srcEl = document.getElementById(`gradesource_${seq}`);
+            const ans = ansEl ? ansEl.value : (item ? item.gradeBest : '');
+            const source = srcEl ? srcEl.value : (item ? item.gradeBestSource : '');
+
+            const btn = ansEl ? ansEl.parentElement.parentElement.querySelector('button') : null;
+            if (btn) btn.innerText = "저장 중...";
+            const args = [seq, item.korean || item.lyric, ans, source];
+
+            if (isGoogleEnv) {
+                google.script.run
+                    .withSuccessHandler(() => {
+                        if (btn) {
+                            btn.innerText = "저장됨!";
+                            btn.classList.add('bg-emerald-600');
+                        }
+                        setTimeout(() => loadGradeAnswers(), 1000);
+                    })
+                    .withFailureHandler(err => {
+                        if (btn) btn.innerText = "최종 픽 저장";
+                        handleGlobalError(err);
+                    })
+                    .saveGradeBest(...args);
+            } else {
+                setTimeout(() => { if (btn) btn.innerText = "저장됨!"; }, 500);
+            }
+        }
+
+        // --- Presentation Mode ---
+        function showPresentationMode(type, seq) {
+            currentPMType = type;
+            currentPMSeq = seq;
+
+            const modal = document.getElementById('presentationModal');
+            const seqEl = document.getElementById('pmSeq');
+            const roleEl = document.getElementById('pmRole');
+            const origEl = document.getElementById('pmOriginal');
+            const gridEl = document.getElementById('pmAnswersGrid');
+            const pmSaveBtn = document.getElementById('pmSaveBtn');
+
+            gridEl.innerHTML = '';
+            pmSaveBtn.innerText = "💾 선택 항목 시트 저장";
+            pmSaveBtn.className = "px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-lg font-bold transition shadow-md flex items-center gap-2";
+
+            if (type === 'class') {
+                const item = currentClassData.find(i => i.seq == seq);
+                if (!item) return;
+
+                seqEl.innerText = item.seq;
+                roleEl.innerText = `Role ${item.role}`;
+                origEl.innerText = item.korean || item.lyric;
+
+                gridEl.className = "w-full max-w-screen-2xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6";
+
+                for (let g = 1; g <= appSettings.numGroups; g++) {
+                    const trans = item.submissions[g];
+                    if (trans) {
+                        const isBest = item.bestGroups && item.bestGroups.includes(g);
+                        const card = document.createElement('div');
+                        card.className = `cursor-pointer transition-transform hover:scale-[1.02] p-6 md:p-8 rounded-3xl border-4 ${isBest ? 'border-indigo-500 bg-indigo-50' : 'border-slate-200 bg-white hover:border-indigo-300'} shadow-xl flex flex-col h-full min-h-[200px]`;
+                        
+                        card.innerHTML = `
+                            <div class="text-2xl md:text-3xl font-black ${isBest ? 'text-indigo-600' : 'text-slate-400'} mb-6 flex justify-between items-center border-b pb-4 border-slate-200 pointer-events-none">
+                                <span>${g}모둠</span>
+                                ${isBest ? '<span class="text-4xl">🏆</span>' : ''}
+                            </div>
+                            <div class="text-3xl md:text-4xl leading-snug font-medium text-slate-800 flex-grow break-keep pointer-events-none">${escapeHtml(trans)}</div>
+                        `;
+                        
+                        card.onclick = () => {
+                            openTextZoomModal(`${seq}번 문장 (${g}모둠 제출안)`, trans, { type: 'class', seq: seq, g: g, trans: trans });
+                        };
+                        gridEl.appendChild(card);
+                    }
+                }
+            } else if (type === 'grade') {
+                const item = currentGradeData.find(i => i.seq == seq);
+                if (!item) return;
+
+                seqEl.innerText = item.seq;
+                roleEl.innerText = `학년 대결`;
+                origEl.innerText = item.korean || item.lyric;
+
+                gridEl.className = "w-full max-w-screen-2xl grid grid-cols-1 md:grid-cols-3 gap-8";
+
+                (appSettings.classes || []).forEach(cName => {
+                    const cBestObj = item.classBests ? item.classBests[cName] : null;
+                    if (cBestObj && cBestObj.best) {
+                        const isGradeSelected = (item.gradeBestSource === cName);
+                        const card = document.createElement('div');
+                        card.className = `cursor-pointer transition-transform hover:scale-[1.02] p-8 md:p-10 rounded-3xl border-4 ${isGradeSelected ? 'border-emerald-500 bg-emerald-50' : 'border-slate-200 bg-white hover:border-emerald-300'} shadow-2xl flex flex-col h-full min-h-[250px]`;
+                        
+                        card.innerHTML = `
+                            <div class="text-3xl md:text-4xl font-black ${isGradeSelected ? 'text-emerald-600' : 'text-slate-400'} mb-2 flex justify-between items-center pointer-events-none">
+                                <span>${escapeHtml(cName)} 베스트</span>
+                                ${isGradeSelected ? '<span class="text-4xl">👑</span>' : ''}
+                            </div>
+                            <div class="text-xl text-slate-400 mb-8 font-bold border-b pb-4 border-slate-200 pointer-events-none">(by ${escapeHtml(String(cBestObj.groups))}모둠)</div>
+                            <div class="text-4xl md:text-5xl leading-snug font-medium text-slate-800 flex-grow break-keep pointer-events-none">${escapeHtml(cBestObj.best)}</div>
+                        `;
+
+                        card.onclick = () => {
+                            openTextZoomModal(`${seq}번 문장 (${cName} 대표 정답)`, cBestObj.best, { type: 'grade', seq: seq, cName: cName, bestText: cBestObj.best });
+                        };
+                        gridEl.appendChild(card);
+                    }
+                });
+            }
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closePresentationMode() {
+            const modal = document.getElementById('presentationModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            document.body.style.overflow = 'auto';
+        }
+
+        function saveFromPresentationMode() {
+            if (!currentPMType || !currentPMSeq) return;
+            const btn = document.getElementById('pmSaveBtn');
+            btn.innerText = "저장 중...";
+            btn.disabled = true;
+
+            if (currentPMType === 'class') {
+                saveItemBest(currentPMSeq);
+                setTimeout(() => {
+                    btn.innerText = "✨ 저장 완료!";
+                    btn.className = "px-6 py-3 bg-green-600 text-white rounded-xl text-lg font-bold transition shadow-md flex items-center gap-2";
+                    btn.disabled = false;
+                }, 800);
+            } else if (currentPMType === 'grade') {
+                saveItemGradeBest(currentPMSeq);
+                setTimeout(() => {
+                    btn.innerText = "✨ 저장 완료!";
+                    btn.className = "px-6 py-3 bg-green-600 text-white rounded-xl text-lg font-bold transition shadow-md flex items-center gap-2";
+                    btn.disabled = false;
+                }, 800);
+            }
+        }
+
+        // --- AI Feedback View ---
+        let currentAiData = [];
+
+        function updateAiFeedbackClassDropdown() {
+            const sel = document.getElementById('aiClassSelect');
+            if (!sel) return;
+            sel.innerHTML = '<option value="">선택</option>';
+            (appSettings.classes || []).forEach(c => {
+                sel.add(new Option(c, c));
+            });
+            if (appSettings.classes && appSettings.classes.length > 0) {
+                sel.value = appSettings.classes[0];
+            }
+            loadAiFeedbackList();
+        }
+
+        function loadAiFeedbackList() {
+            const classNum = document.getElementById('aiClassSelect').value;
+            if (!classNum) return;
+
+            showLoading(true);
+            if (isGoogleEnv) {
+                google.script.run
+                    .withSuccessHandler(renderAiFeedbackList)
+                    .withFailureHandler(handleGlobalError)
+                    .getAiFeedbackData(classNum);
+            } else {
+                setTimeout(() => renderAiFeedbackList([
+                    {
+                        seq: 1,
+                        group: 2,
+                        role: 'A',
+                        korean: '나는 그저 가난한 소년일 뿐입니다.',
+                        translation: 'I am just a poor boy',
+                        grammar: '문법적 오류 없이 주어와 보어의 관계가 명확합니다.',
+                        vocabulary: 'poor boy라는 표현이 가사 원문의 어감을 잘 전달합니다.',
+                        expression: '자연스러운 원문 뉘앙스를 잘 살린 우수한 번역입니다.',
+                        overall: '훌륭한 번역입니다! 의미 왜곡 없이 매끄럽게 작성되었습니다.',
+                        provider: 'ChatGPT (gpt-4o)'
+                    }
+                ]), 500);
+            }
+        }
+
+        function renderAiFeedbackList(data) {
+            showLoading(false);
+            currentAiData = data || [];
+            const container = document.getElementById('aiFeedbackContainer');
+            if (!container) return;
+            container.innerHTML = '';
+
+            const classNum = document.getElementById('aiClassSelect').value;
+
+            if (!data || data.length === 0) {
+                container.innerHTML = `
+                    <div class="glass-panel p-10 rounded-2xl text-center">
+                        <p class="text-slate-500 font-medium mb-4">${classNum ? classNum + '에 대한 AI 피드백 기록이 아직 없습니다.' : '반을 선택해 주세요.'}</p>
+                        <p class="text-xs text-slate-400">우측 상단의 '⚡ AI 피드백 생성/업데이트' 버튼을 클릭하면 학생 제출안에 대한 피드백이 생성됩니다.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            data.forEach(item => {
+                const card = document.createElement('div');
+                card.className = "glass-panel rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-md transition space-y-4";
+
+                card.innerHTML = `
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-3 border-b border-slate-100">
+                        <div class="flex items-center gap-2">
+                            <span class="px-3 py-1 bg-teal-100 text-teal-800 font-extrabold rounded-full text-xs md:text-sm">${item.seq}번 문장</span>
+                            <span class="px-3 py-1 bg-slate-100 text-slate-700 font-bold rounded-full text-xs">${item.group}모둠 (${item.role} 역할)</span>
+                        </div>
+                        <span class="px-2.5 py-0.5 bg-slate-100 text-slate-500 text-xs font-medium rounded-md border border-slate-200">🤖 Engine: ${escapeHtml(item.provider || 'AI')}</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-slate-50/80 p-4 rounded-xl border border-slate-200">
+                            <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">🇰🇷 우리말 원문</p>
+                            <p class="text-slate-800 font-serif font-medium text-base md:text-lg">${escapeHtml(item.korean || '')}</p>
+                        </div>
+                        <div class="bg-blue-50/60 p-4 rounded-xl border border-blue-100">
+                            <p class="text-[11px] font-bold text-blue-600 uppercase tracking-wider mb-1">🇬🇧 학생 영어 번역</p>
+                            <p class="text-blue-950 font-serif font-medium text-base md:text-lg">${escapeHtml(item.translation || '')}</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div class="p-3.5 bg-emerald-50/60 rounded-xl border border-emerald-200">
+                            <p class="text-xs font-bold text-emerald-800 flex items-center gap-1 mb-1.5">📌 문법 (Grammar)</p>
+                            <p class="text-xs md:text-sm text-slate-700 leading-relaxed font-medium">${escapeHtml(item.grammar || '-')}</p>
+                        </div>
+                        <div class="p-3.5 bg-amber-50/60 rounded-xl border border-amber-200">
+                            <p class="text-xs font-bold text-amber-800 flex items-center gap-1 mb-1.5">📚 어휘 (Vocabulary)</p>
+                            <p class="text-xs md:text-sm text-slate-700 leading-relaxed font-medium">${escapeHtml(item.vocabulary || '-')}</p>
+                        </div>
+                        <div class="p-3.5 bg-purple-50/60 rounded-xl border border-purple-200">
+                            <p class="text-xs font-bold text-purple-800 flex items-center gap-1 mb-1.5">💡 표현 (Expression)</p>
+                            <p class="text-xs md:text-sm text-slate-700 leading-relaxed font-medium">${escapeHtml(item.expression || '-')}</p>
+                        </div>
+                    </div>
+
+                    <div class="p-4 bg-gradient-to-r from-indigo-50/80 to-blue-50/80 rounded-xl border border-indigo-100">
+                        <p class="text-xs font-bold text-indigo-800 flex items-center gap-1 mb-1">🌟 종합 피드백 (Overall)</p>
+                        <p class="text-sm text-slate-800 leading-relaxed font-semibold">${escapeHtml(item.overall || '-')}</p>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function runAiFeedbackGeneration() {
+            const classNum = document.getElementById('aiClassSelect').value;
+            const engine = document.getElementById('aiEngineSelect').value;
+
+            if (!classNum) return alert('피드백을 생성할 반을 선택해 주세요.');
+
+            const btn = document.getElementById('aiGenerateBtn');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<span>🤖 AI 피드백 분석 중... (잠시만 기다려주세요)</span>';
+            }
+            showLoading(true);
+
+            const onSuccess = (data) => {
+                showLoading(false);
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<span>⚡ AI 피드백 생성 / 업데이트</span>';
+                }
+                renderAiFeedbackList(data);
+                alert('✨ AI 피드백 처리가 완료되었습니다!\n(이미 피드백이 기록된 문장은 스킵되고, 피드백 셀이 비어있는 문장에만 새로 생성됩니다)');
+            };
+
+            const onFailure = (err) => {
+                showLoading(false);
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<span>⚡ AI 피드백 생성 / 업데이트</span>';
+                }
+                handleGlobalError(err);
+            };
+
+            if (isGoogleEnv) {
+                google.script.run
+                    .withSuccessHandler(onSuccess)
+                    .withFailureHandler(onFailure)
+                    .generateAiFeedback(classNum, engine);
+            } else {
+                setTimeout(() => {
+                    onSuccess([
+                        {
+                            seq: 1,
+                            group: 2,
+                            role: 'A',
+                            korean: '나는 그저 가난한 소년일 뿐입니다.',
+                            translation: 'I am just a poor boy',
+                            grammar: '주어-동사의 형태가 바르게 작성되었습니다.',
+                            vocabulary: 'poor boy 단어가 잘 매칭되었습니다.',
+                            expression: '문장이 매우 자연스럽고 구어체적입니다.',
+                            overall: '원문의 뉘앙스를 아주 잘 표현해낸 뛰어난 번역입니다.',
+                            provider: engine === 'claude' ? 'Claude (claude-3-5-sonnet)' : 'ChatGPT (gpt-4o)'
+                        }
+                    ]);
+                }, 1500);
+            }
+        }
+
+        // --- PDF Handout Generator & Modal ---
+        let currentHandoutData = [];
+
+        function openPdfHandoutModal() {
+            showLoading(true);
+            if (isGoogleEnv) {
+                google.script.run
+                    .withSuccessHandler(data => {
+                        showLoading(false);
+                        currentHandoutData = data || [];
+                        renderHandoutPreview();
+                        const modal = document.getElementById('pdfHandoutModal');
+                        modal.classList.remove('hidden');
+                        modal.classList.add('flex');
+                        document.body.style.overflow = 'hidden';
+                    })
+                    .withFailureHandler(handleGlobalError)
+                    .getLyricsData();
+            } else {
+                setTimeout(() => {
+                    showLoading(false);
+                    currentHandoutData = [
+                        { seq: 1, role: 'A', korean: '나는 그저 가난한 소년일 뿐입니다.' },
+                        { seq: 2, role: 'B', korean: '내 이야기는 거의 전해지지 않지만,' },
+                        { seq: 3, role: 'C', korean: '나는 내 저항력을 탕진했습니다.' },
+                        { seq: 4, role: 'D', korean: '중얼거림 한 주머니를 위해.' },
+                        { seq: 5, role: 'A', korean: '그런 것들이 약속입니다.' },
+                        { seq: 6, role: 'B', korean: '모두 거짓과 농담일 뿐,' },
+                        { seq: 7, role: 'C', korean: '여전히 사람은 들으려는 것만 듣고,' },
+                        { seq: 8, role: 'D', korean: '나머지는 무시합니다.' },
+                        { seq: 9, role: 'A', korean: '그가 그의 동네를 떠났을 때,' },
+                        { seq: 10, role: 'B', korean: '그는 소년일 뿐이었습니다.' },
+                        { seq: 11, role: 'C', korean: '낯선 사람들의 고요함 속에서,' },
+                        { seq: 12, role: 'D', korean: '기차역을 따라 달아났습니다.' }
+                    ];
+                    renderHandoutPreview();
+                    const modal = document.getElementById('pdfHandoutModal');
+                    modal.classList.remove('hidden');
+                    modal.classList.add('flex');
+                    document.body.style.overflow = 'hidden';
+                }, 400);
+            }
+        }
+
+        function closePdfHandoutModal() {
+            const modal = document.getElementById('pdfHandoutModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            document.body.style.overflow = 'auto';
+        }
+
+        function renderHandoutPreview() {
+            const container = document.getElementById('pdfHandoutPreview');
+            if (!container) return;
+            container.innerHTML = '';
+
+            if (!currentHandoutData || currentHandoutData.length === 0) {
+                container.innerHTML = '<p class="text-center text-slate-500 py-8 bg-white rounded-xl">학습 유인물로 생성할 원본정보 데이터가 없습니다.</p>';
+                return;
+            }
+
+            const pageSize = 10;
+            const totalPages = Math.ceil(currentHandoutData.length / pageSize);
+
+            for (let pageIdx = 0; pageIdx < totalPages; pageIdx++) {
+                const pageItems = currentHandoutData.slice(pageIdx * pageSize, (pageIdx + 1) * pageSize);
+                const pageEl = document.createElement('div');
+                pageEl.className = "bg-white p-6 rounded-2xl shadow-sm border border-slate-300 mb-6";
+
+                let rowsHtml = '';
+                pageItems.forEach(item => {
+                    rowsHtml += `
+                        <tr style="height: 50px;">
+                            <td class="text-center font-bold text-black" style="border: 1px solid #000000; padding: 6px;">${item.seq}</td>
+                            <td class="text-center font-bold text-black" style="border: 1px solid #000000; padding: 6px;">${escapeHtml(item.role)}</td>
+                            <td style="border: 1px solid #000000; padding: 6px 8px; font-weight: 600; color: #000000; line-height: 1.35; font-size: 12px; word-break: break-word;">${escapeHtml(item.korean)}</td>
+                            <td style="border: 1px solid #000000; background-color: #ffffff;"></td>
+                            <td style="border: 1px solid #000000; background-color: #ffffff;"></td>
+                        </tr>
+                    `;
+                });
+
+                pageEl.innerHTML = `
+                    <div class="flex justify-between items-center mb-3 pb-2 border-b border-black">
+                        <span class="font-extrabold text-base text-black">🎤 한영 번역 마스터 유인물</span>
+                        <div class="text-xs font-semibold text-black flex gap-3">
+                            <span>학년: ____</span>
+                            <span>반: ____</span>
+                            <span>모둠: ____</span>
+                            <span>역할: ____</span>
+                            <span>이름: ________</span>
+                            <span class="px-2 py-0.5 border border-black rounded text-black font-bold">Page ${pageIdx + 1} / ${totalPages}</span>
+                        </div>
+                    </div>
+                    <table class="w-full text-xs text-left border-collapse" style="table-layout: fixed;">
+                        <thead>
+                            <tr class="bg-white text-black font-bold">
+                                <th style="width: 6%; padding: 8px; border: 1.5px solid #000000; text-align: center;">순번</th>
+                                <th style="width: 6%; padding: 8px; border: 1.5px solid #000000; text-align: center;">역할</th>
+                                <th style="width: 18%; padding: 8px; border: 1.5px solid #000000; text-align: center;">우리말 문장</th>
+                                <th style="width: 35%; padding: 8px; border: 1.5px solid #000000; text-align: center;">내 영어 문장</th>
+                                <th style="width: 35%; padding: 8px; border: 1.5px solid #000000; text-align: center;">영어 문장 (정답)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rowsHtml}
+                        </tbody>
+                    </table>
+                `;
+                container.appendChild(pageEl);
+            }
+        }
+
+        function generateHandoutFullHtml() {
+            if (!currentHandoutData || currentHandoutData.length === 0) return '';
+            const pageSize = 10;
+            const totalPages = Math.ceil(currentHandoutData.length / pageSize);
+
+            let pagesHtml = '';
+
+            for (let pageIdx = 0; pageIdx < totalPages; pageIdx++) {
+                const pageItems = currentHandoutData.slice(pageIdx * pageSize, (pageIdx + 1) * pageSize);
+                let rowsHtml = '';
+
+                pageItems.forEach(item => {
+                    rowsHtml += `
+                        <tr style="height: 52px;">
+                            <td style="border: 1px solid #000000; padding: 6px; text-align: center; font-weight: 800; color: #000000;">${item.seq}</td>
+                            <td style="border: 1px solid #000000; padding: 6px; text-align: center; font-weight: 700; color: #000000;">${escapeHtml(item.role)}</td>
+                            <td style="border: 1px solid #000000; padding: 6px 8px; font-weight: 600; color: #000000; line-height: 1.35; font-size: 12px; word-break: break-word;">${escapeHtml(item.korean)}</td>
+                            <td style="border: 1px solid #000000; background-color: #ffffff;"></td>
+                            <td style="border: 1px solid #000000; background-color: #ffffff;"></td>
+                        </tr>
+                    `;
+                });
+
+                const isLastPage = (pageIdx === totalPages - 1);
+                pagesHtml += `
+                    <div class="page-container ${isLastPage ? '' : 'page-break'}">
+                        <table class="header-table">
+                            <tr>
+                                <td class="header-title">🎤 한영 번역 마스터 유인물</td>
+                                <td class="header-info">
+                                    <span class="info-box">학년: _____ &nbsp; 반: _____ &nbsp; 모둠: _____ &nbsp; 역할: _____ &nbsp; 이름: ____________</span>
+                                    &nbsp; <span style="font-weight: 800; color: #000000;">[ ${pageIdx + 1} / ${totalPages} Page ]</span>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <table class="handout-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 6%;">순번</th>
+                                    <th style="width: 6%;">역할</th>
+                                    <th style="width: 18%;">우리말 문장</th>
+                                    <th style="width: 35%;">내 영어 문장</th>
+                                    <th style="width: 35%;">영어 문장 (정답)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${rowsHtml}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+
+            return `
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>한영 번역 마스터 유인물 (A4 가로 흑백)</title>
+<style>
+    @page {
+        size: A4 landscape;
+        margin: 10mm 12mm 10mm 12mm;
+    }
+    @media print {
+        body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .page-break { page-break-after: always; break-after: page; }
+    }
+    body {
+        font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+        color: #000000;
+        margin: 0;
+        padding: 0;
+        background: #ffffff;
+    }
+    .page-container {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 4px 0;
+    }
+    .header-table {
+        width: 100%;
+        margin-bottom: 10px;
+        border-collapse: collapse;
+    }
+    .header-title {
+        font-size: 19px;
+        font-weight: 800;
+        color: #000000;
+    }
+    .header-info {
+        text-align: right;
+        font-size: 12px;
+        font-weight: 600;
+        color: #000000;
+    }
+    .info-box {
+        display: inline-block;
+        border: 1px solid #000000;
+        padding: 4px 10px;
+        border-radius: 4px;
+        background: #ffffff;
+    }
+    .handout-table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+    }
+    .handout-table th {
+        background-color: #ffffff;
+        color: #000000;
+        font-size: 13px;
+        font-weight: 700;
+        padding: 8px 6px;
+        border: 1.5px solid #000000;
+        text-align: center;
+    }
+    .handout-table td {
+        border: 1px solid #000000;
+        padding: 6px;
+        font-size: 12px;
+        vertical-align: middle;
+        word-break: break-word;
+        background-color: #ffffff;
+    }
+</style>
+</head>
+<body>
+    ${pagesHtml}
+</body>
+</html>
+            `;
+        }
+
+        function printHandoutPdf() {
+            const printWindow = window.open('', '_blank', 'width=1100,height=800');
+            if (!printWindow) {
+                alert('팝업 차단이 설정되어 있습니다. 팝업 차단을 해제해 주세요.');
+                return;
+            }
+            const htmlContent = generateHandoutFullHtml();
+            printWindow.document.write(htmlContent);
+            printWindow.document.close();
+            printWindow.focus();
+            setTimeout(() => {
+                printWindow.print();
+            }, 400);
+        }
+
+        // --- Compare View & Diff Engine ---
+        let currentCompareData = [];
+
+        function highlightDiff(originalText, selectedText) {
+            if (!selectedText || !selectedText.trim()) {
+                return '<span class="text-slate-300 italic text-base">미선정</span>';
+            }
+            if (!originalText || !originalText.trim()) {
+                return escapeHtml(selectedText);
+            }
+
+            const origWords = originalText.trim().split(/\s+/);
+            const selWords = selectedText.trim().split(/\s+/);
+            const m = origWords.length;
+            const n = selWords.length;
+
+            const dp = Array(m + 1).fill(null).map(() => Array(n + 1).fill(0));
+
+            for (let i = 1; i <= m; i++) {
+                for (let j = 1; j <= n; j++) {
+                    const w1 = origWords[i - 1].toLowerCase().replace(/[^\w]/g, '');
+                    const w2 = selWords[j - 1].toLowerCase().replace(/[^\w]/g, '');
+                    if (w1 === w2 && w1.length > 0) {
+                        dp[i][j] = dp[i - 1][j - 1] + 1;
+                    } else {
+                        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+                    }
+                }
+            }
+
+            let i = m, j = n;
+            const matchedInSel = new Set();
+            while (i > 0 && j > 0) {
+                const w1 = origWords[i - 1].toLowerCase().replace(/[^\w]/g, '');
+                const w2 = selWords[j - 1].toLowerCase().replace(/[^\w]/g, '');
+                if (w1 === w2 && w1.length > 0 && dp[i][j] === dp[i - 1][j - 1] + 1) {
+                    matchedInSel.add(j - 1);
+                    i--;
+                    j--;
+                } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+                    i--;
+                } else {
+                    j--;
+                }
+            }
+
+            return selWords.map((word, idx) => {
+                const escaped = escapeHtml(word);
+                if (matchedInSel.has(idx)) {
+                    return `<span class="text-slate-800">${escaped}</span>`;
+                } else {
+                    return `<mark class="bg-yellow-300 text-yellow-950 px-1.5 py-0.5 rounded font-bold inline-block shadow-sm my-0.5">${escaped}</mark>`;
+                }
+            }).join(' ');
+        }
+
+        function loadComparisonList() {
+            showLoading(true);
+            if (isGoogleEnv) {
+                google.script.run
+                    .withSuccessHandler(renderComparisonList)
+                    .withFailureHandler(handleGlobalError)
+                    .getComparisonData();
+            } else {
+                setTimeout(() => renderComparisonList([
+                    {
+                        seq: 1,
+                        role: 'A',
+                        korean: '나는 그저 가난한 소년일 뿐입니다.',
+                        originalEnglish: 'I am just a poor boy',
+                        gradeBest: 'I am only a poor boy',
+                        gradeBestSource: '1반'
+                    },
+                    {
+                        seq: 2,
+                        role: 'B',
+                        korean: '내 이야기는 거의 전해지지 않지만,',
+                        originalEnglish: 'Though my story is seldom told',
+                        gradeBest: 'Though my story is rarely told',
+                        gradeBestSource: '2반'
+                    }
+                ]), 500);
+            }
+        }
+
+        function renderComparisonList(data) {
+            showLoading(false);
+            currentCompareData = data || [];
+            const container = document.getElementById('compareListContainer');
+            if (!container) return;
+            container.innerHTML = '';
+
+            if (!data || data.length === 0) {
+                container.innerHTML = `<p class="text-center text-slate-500 py-10 glass-panel rounded-xl">비교할 데이터가 없습니다.</p>`;
+                return;
+            }
+
+            data.forEach(item => {
+                const card = document.createElement('div');
+                card.className = "glass-panel rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-md transition cursor-pointer space-y-4";
+                card.onclick = () => openCompareZoomModal(item.seq);
+
+                card.innerHTML = `
+                    <div class="flex flex-wrap justify-between items-center gap-2 pb-3 border-b border-slate-100">
+                        <div class="flex items-center gap-3">
+                            <span class="w-9 h-9 bg-purple-100 text-purple-800 font-black rounded-full flex justify-center items-center text-base shadow-sm">${item.seq}</span>
+                            <div>
+                                <p class="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-0.5">우리말 문장 (${escapeHtml(item.role)})</p>
+                                <p class="text-slate-800 font-serif font-medium text-base md:text-lg">${escapeHtml(item.korean)}</p>
+                            </div>
+                        </div>
+                        ${item.gradeBestSource ? `<span class="px-3 py-1 bg-emerald-100 text-emerald-800 text-xs font-extrabold rounded-full shadow-sm">🏆 채택 출처: ${escapeHtml(item.gradeBestSource)}</span>` : '<span class="px-3 py-1 bg-slate-100 text-slate-400 text-xs font-medium rounded-full">학년 대표 미선정</span>'}
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col justify-between">
+                            <div>
+                                <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">📜 공식 원본 영어 문장</p>
+                                <p class="text-slate-800 font-serif font-medium text-lg md:text-xl leading-relaxed">${escapeHtml(item.originalEnglish || '원문 없음')}</p>
+                            </div>
+                        </div>
+
+                        <div class="bg-purple-50/40 p-4 rounded-xl border border-purple-200 flex flex-col justify-between">
+                            <div>
+                                <p class="text-xs font-bold text-purple-700 uppercase tracking-wider mb-2 flex justify-between items-center">
+                                    <span>👑 학년 최종 선정 영어 문장</span>
+                                    <span class="text-[10px] text-amber-800 font-bold bg-amber-100 px-2 py-0.5 rounded">💡 노란색: 원문과 차이나는 부분</span>
+                                </p>
+                                <p class="text-slate-900 font-serif font-medium text-lg md:text-xl leading-relaxed">${highlightDiff(item.originalEnglish, item.gradeBest)}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-right pt-1">
+                        <span class="text-xs text-purple-600 font-bold hover:underline">🔍 클릭하여 크게 확대 비교 🔍</span>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function openCompareZoomModal(seq) {
+            const item = currentCompareData.find(i => i.seq == seq);
+            if (!item) return;
+
+            document.getElementById('compZoomSeq').innerText = item.seq;
+            document.getElementById('compZoomSource').innerText = item.gradeBestSource ? `🏆 ${item.gradeBestSource} 대표 채택` : '미선정';
+            document.getElementById('compZoomKorean').innerText = item.korean || '';
+            document.getElementById('compZoomOriginal').innerText = item.originalEnglish || '원문 없음';
+            document.getElementById('compZoomSelected').innerHTML = highlightDiff(item.originalEnglish, item.gradeBest);
+
+            const modal = document.getElementById('compareZoomModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeCompareZoomModal() {
+            const modal = document.getElementById('compareZoomModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            document.body.style.overflow = 'auto';
+        }
+
+        // --- Settings View ---
+        function loadSettingsForm() {
+            document.getElementById('setClasses').value = (appSettings.classes || []).join(', ');
+            document.getElementById('setNumGroups').value = appSettings.numGroups;
+            document.getElementById('setRoles').value = (appSettings.roles || []).join(', ');
+            if (document.getElementById('setChatGptKey')) {
+                document.getElementById('setChatGptKey').value = appSettings.chatGptKey || '';
+            }
+            if (document.getElementById('setClaudeKey')) {
+                document.getElementById('setClaudeKey').value = appSettings.claudeKey || '';
+            }
+            updateToggleSwitchesUI();
+        }
+
+        function saveSettings() {
+            const classStr = document.getElementById('setClasses').value;
+            const classesList = classStr.split(',').map(s => s.trim()).filter(s => s);
+            const g = parseInt(document.getElementById('setNumGroups').value);
+            const roleStr = document.getElementById('setRoles').value;
+            const rolesList = roleStr.split(',').map(s => s.trim()).filter(s => s);
+            const chatGptKey = document.getElementById('setChatGptKey') ? document.getElementById('setChatGptKey').value.trim() : '';
+            const claudeKey = document.getElementById('setClaudeKey') ? document.getElementById('setClaudeKey').value.trim() : '';
+            const enablePeerEvalPart = document.getElementById('setEnablePeerEvalPart') ? document.getElementById('setEnablePeerEvalPart').checked : true;
+            const enablePeerEvalResult = document.getElementById('setEnablePeerEvalResult') ? document.getElementById('setEnablePeerEvalResult').checked : true;
+
+            if (classesList.length === 0) return alert('최소 1개 이상의 반 이름을 입력해 주세요. (예: 1반, 2반 또는 A반, B반)');
+            if (isNaN(g) || g < 1) return alert('올바른 모둠 개수를 입력해 주세요 (1 이상).');
+            if (rolesList.length === 0) return alert('최소 1개 이상의 역할을 입력해 주세요.');
+
+            const newSettings = { 
+                classes: classesList, 
+                numClasses: classesList.length, 
+                numGroups: g, 
+                roles: rolesList,
+                chatGptKey: chatGptKey,
+                claudeKey: claudeKey,
+                enablePeerEvalPart: enablePeerEvalPart,
+                enablePeerEvalResult: enablePeerEvalResult
+            };
+
+            showLoading(true);
+            const onSaveSuccess = () => {
+                appSettings = newSettings;
+                populateDropdowns();
+                updateStudentNavState();
+                updateToggleSwitchesUI();
+                updateClassVoteDropdown();
+                updateAiFeedbackClassDropdown();
+                showLoading(false);
+                alert('설정이 성공적으로 저장되었으며 시트에 반영되었습니다.');
+            };
+
+            if (isGoogleEnv) {
+                google.script.run
+                    .withSuccessHandler(onSaveSuccess)
+                    .withFailureHandler(handleGlobalError)
+                    .saveSettings(newSettings);
+            } else {
+                onSaveSuccess();
+            }
+        }
+
+        function clearTestData() {
+            if (!confirm("⚠️ 경고: 모든 학생 제출 데이터와 반별 투표 데이터가 완전히 삭제됩니다.\n정말로 초기화하시겠습니까?")) return;
+            showLoading(true);
+            if (isGoogleEnv) {
+                google.script.run
+                    .withSuccessHandler(() => {
+                        showLoading(false);
+                        alert('모든 데이터가 초기화되었습니다.');
+                        window.location.reload();
+                    })
+                    .withFailureHandler(handleGlobalError)
+                    .clearTestData();
+            }
+        }
+    </script>
+
+</body>
+
+</html>
