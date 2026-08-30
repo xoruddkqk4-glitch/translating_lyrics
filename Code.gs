@@ -685,33 +685,54 @@ function callChatGPT(apiKey, systemPrompt, userPrompt) {
 
 function callClaude(apiKey, systemPrompt, userPrompt) {
   const url = 'https://api.anthropic.com/v1/messages';
-  const payload = {
-    model: 'claude-3-5-sonnet-20241022',
-    max_tokens: 1000,
-    system: systemPrompt,
-    messages: [
-      { role: 'user', content: userPrompt }
-    ]
-  };
-  const options = {
-    method: 'post',
-    contentType: 'application/json',
-    headers: {
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01'
-    },
-    payload: JSON.stringify(payload),
-    muteHttpExceptions: true
-  };
-  
-  const response = UrlFetchApp.fetch(url, options);
-  const resCode = response.getResponseCode();
-  const resText = response.getContentText();
-  if (resCode !== 200) {
-    throw new Error('Claude API 호출 실패 (' + resCode + '): ' + resText);
+  const candidateModels = [
+    'claude-3-5-sonnet-20240620',
+    'claude-3-5-sonnet-20241022',
+    'claude-3-haiku-20240307',
+    'claude-3-opus-20240229'
+  ];
+
+  let lastErrorText = '';
+  for (let modelName of candidateModels) {
+    const payload = {
+      model: modelName,
+      max_tokens: 1000,
+      system: systemPrompt,
+      messages: [
+        { role: 'user', content: userPrompt }
+      ]
+    };
+    const options = {
+      method: 'post',
+      contentType: 'application/json',
+      headers: {
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01'
+      },
+      payload: JSON.stringify(payload),
+      muteHttpExceptions: true
+    };
+    
+    const response = UrlFetchApp.fetch(url, options);
+    const resCode = response.getResponseCode();
+    const resText = response.getContentText();
+
+    if (resCode === 200) {
+      const json = JSON.parse(resText);
+      return json.content[0].text;
+    }
+
+    lastErrorText = resText;
+    // 404 (not_found_error) 발생 시 다른 호환 모델 식별자로 자동 순회 시도
+    if (resCode === 404) {
+      continue;
+    } else {
+      // API 키 인증 실패(401) 등 404 외 에러는 즉시 예외 발생
+      throw new Error('Claude API 호출 실패 (' + resCode + '): ' + resText);
+    }
   }
-  const json = JSON.parse(resText);
-  return json.content[0].text;
+
+  throw new Error('Claude API 호출 실패 (사용 계정에서 가능한 Claude 모델을 찾지 못했습니다): ' + lastErrorText);
 }
 
 function parseAiResponseJson(rawText) {
