@@ -684,6 +684,15 @@ function callChatGPT(apiKey, systemPrompt, userPrompt) {
 }
 
 function callClaude(apiKey, systemPrompt, userPrompt) {
+  if (!apiKey || typeof apiKey !== 'string') {
+    throw new Error("Claude API 키가 설정되어 있지 않습니다. '설정' 화면 또는 B6셀에 API 키를 등록해 주세요.");
+  }
+
+  const cleanKey = apiKey.trim();
+  if (cleanKey.startsWith('sk-proj-')) {
+    throw new Error("Claude API 키 자리에 OpenAI API 키('sk-proj-...')가 입력되었습니다. '설정' 화면의 B6셀에 Anthropic Claude 전용 API 키('sk-ant-...')를 입력해 주세요.");
+  }
+
   const url = 'https://api.anthropic.com/v1/messages';
   const candidateModels = [
     { id: 'claude-3-7-sonnet-20250219', name: 'Claude 3.7 Sonnet' },
@@ -707,7 +716,7 @@ function callClaude(apiKey, systemPrompt, userPrompt) {
       method: 'post',
       contentType: 'application/json',
       headers: {
-        'x-api-key': apiKey,
+        'x-api-key': cleanKey,
         'anthropic-version': '2023-06-01'
       },
       payload: JSON.stringify(payload),
@@ -735,7 +744,7 @@ function callClaude(apiKey, systemPrompt, userPrompt) {
     }
   }
 
-  throw new Error('Claude API 호출 실패 (사용 가능한 Claude 모델을 찾지 못했습니다): ' + lastErrorText);
+  throw new Error('Claude API 호출 실패 (404 Not Found):\n입력하신 Anthropic API 키에 이용 가능한 Claude 모델 권한이 없거나 결제 크레딧이 부족합니다.\n1. console.anthropic.com에 접속하여 API 키(sk-ant-...)가 올바른지 확인해 주세요.\n2. Plans & Billing 메뉴에서 최소 크레딧($5) 충전 여부를 확인해 주세요.');
 }
 
 function parseAiResponseJson(rawText) {
