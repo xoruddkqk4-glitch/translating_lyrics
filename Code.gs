@@ -715,19 +715,67 @@ function callClaude(apiKey, systemPrompt, userPrompt) {
 }
 
 function parseAiResponseJson(rawText) {
+  if (!rawText) return { grammar: '', vocabulary: '', expression: '', overall: '' };
+
+  let clean = rawText.trim();
+  
+  // 1. 마크다운 코드블록 제거 (```json ... ``` 또는 ``` ... ```)
+  if (clean.startsWith('```')) {
+    clean = clean.replace(/^```(json)?/i, '').replace(/```$/i, '').trim();
+  }
+  clean = clean.replace(/```$/g, '').trim();
+
+  // 2. 이중 따옴표("" -> ") 변환 처리
+  if (clean.includes('""')) {
+    clean = clean.replace(/""/g, '"');
+  }
+
+  // 3. 표준 JSON.parse 시도
   try {
-    let clean = rawText.trim();
-    if (clean.startsWith('```')) {
-      clean = clean.replace(/^```(json)?/i, '').replace(/```$/i, '').trim();
-    }
     return JSON.parse(clean);
-  } catch (e) {
-    return {
-      grammar: "피드백을 정상 파싱하지 못했습니다.",
-      vocabulary: "원문: " + rawText,
-      expression: "",
-      overall: "AI 응답 파싱 오류"
-    };
+  } catch (e1) {
+    // 4. JSON 문자열 내부의 실제 개행문자(\n)로 인한 SyntaxError 자동 보정
+    try {
+      let fixedJson = clean.replace(/\r?\n/g, function(match, offset, string) {
+        let quotes = 0;
+        for (let i = 0; i < offset; i++) {
+          if (string[i] === '"' && (i === 0 || string[i - 1] !== '\\')) {
+            quotes++;
+          }
+        }
+        return (quotes % 2 === 1) ? '\\n' : match;
+      });
+      return JSON.parse(fixedJson);
+    } catch (e2) {
+      // 5. 정규표현식을 이용한 정교한 필드 추출 Fallback
+      let grammar = '', vocabulary = '', expression = '', overall = '';
+      
+      const gMatch = clean.match(/"grammar"\s*:\s*"([\s\S]*?)"\s*,\s*"vocabulary"/i);
+      const vMatch = clean.match(/"vocabulary"\s*:\s*"([\s\S]*?)"\s*,\s*"expression"/i);
+      const eMatch = clean.match(/"expression"\s*:\s*"([\s\S]*?)"\s*,\s*"overall"/i);
+      const oMatch = clean.match(/"overall"\s*:\s*"([\s\S]*?)"\s*\}?$/i);
+
+      if (gMatch) grammar = gMatch[1].replace(/\\n/g, '\n').trim();
+      if (vMatch) vocabulary = vMatch[1].replace(/\\n/g, '\n').trim();
+      if (eMatch) expression = eMatch[1].replace(/\\n/g, '\n').trim();
+      if (oMatch) overall = oMatch[1].replace(/\\n/g, '\n').trim();
+
+      if (grammar || vocabulary || expression || overall) {
+        return {
+          grammar: grammar || '-',
+          vocabulary: vocabulary || '-',
+          expression: expression || '-',
+          overall: overall || clean
+        };
+      }
+
+      return {
+        grammar: "피드백을 정상 파싱하지 못했습니다.",
+        vocabulary: "원문: " + rawText,
+        expression: "",
+        overall: clean
+      };
+    }
   }
 }
 
