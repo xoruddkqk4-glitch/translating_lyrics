@@ -2467,7 +2467,6 @@
                             <span>모둠: ____</span>
                             <span>역할: ____</span>
                             <span>이름: ________</span>
-                            <span class="px-2 py-0.5 border border-black rounded text-black font-bold">Page ${pageIdx + 1} / ${totalPages}</span>
                         </div>
                     </div>
                     <table class="w-full text-xs text-left border-collapse" style="table-layout: fixed;">
@@ -2520,7 +2519,6 @@
                                 <td class="header-title">🎤 한영 번역 마스터 유인물(영작용)</td>
                                 <td class="header-info">
                                     <span class="info-box">날짜: ________ &nbsp; 학년: _____ &nbsp; 반: _____ &nbsp; 모둠: _____ &nbsp; 역할: _____ &nbsp; 이름: ____________</span>
-                                    &nbsp; <span style="font-weight: 800; color: #000000;">[ ${pageIdx + 1} / ${totalPages} Page ]</span>
                                 </td>
                             </tr>
                         </table>
@@ -2702,7 +2700,6 @@
 
             const pageSize = 10;
             const totalSheets = Math.ceil(currentPostClassHandoutData.length / pageSize);
-            const totalPages = totalSheets * 2;
 
             for (let sheetIdx = 0; sheetIdx < totalSheets; sheetIdx++) {
                 const pageItems = currentPostClassHandoutData.slice(sheetIdx * pageSize, (sheetIdx + 1) * pageSize);
@@ -2727,7 +2724,7 @@
 
                 frontPageEl.innerHTML = `
                     <div class="flex justify-between items-center mb-3 pb-2 border-b border-black">
-                        <span class="font-extrabold text-base text-black">🎤 한영 번역 마스터 유인물 (필사용 - 앞면)</span>
+                        <span class="font-extrabold text-base text-black">🎤 한영 번역 마스터 유인물(필사용 - 앞면)</span>
                         <div class="text-xs font-semibold text-black flex gap-3">
                             <span>날짜: ________</span>
                             <span>학년: ____</span>
@@ -2735,7 +2732,6 @@
                             <span>모둠: ____</span>
                             <span>역할: ____</span>
                             <span>이름: ________</span>
-                            <span class="px-2 py-0.5 border border-black rounded text-black font-bold">Sheet ${sheetIdx + 1} 앞면 (${sheetIdx * 2 + 1} / ${totalPages} Page)</span>
                         </div>
                     </div>
                     <table class="w-full text-xs text-left border-collapse" style="table-layout: fixed;">
@@ -2774,7 +2770,7 @@
 
                 backPageEl.innerHTML = `
                     <div class="flex justify-between items-center mb-3 pb-2 border-b border-black">
-                        <span class="font-extrabold text-base text-black">🎤 한영 번역 마스터 유인물 (필사용 - 뒷면)</span>
+                        <span class="font-extrabold text-base text-black">🎤 한영 번역 마스터 유인물(필사용 - 뒷면)</span>
                         <div class="text-xs font-semibold text-black flex gap-3">
                             <span>날짜: ________</span>
                             <span>학년: ____</span>
@@ -2782,7 +2778,6 @@
                             <span>모둠: ____</span>
                             <span>역할: ____</span>
                             <span>이름: ________</span>
-                            <span class="px-2 py-0.5 border border-black rounded text-black font-bold">Sheet ${sheetIdx + 1} 뒷면 (${sheetIdx * 2 + 2} / ${totalPages} Page)</span>
                         </div>
                     </div>
                     <table class="w-full text-xs text-left border-collapse" style="table-layout: fixed;">
@@ -2808,7 +2803,6 @@
             if (!currentPostClassHandoutData || currentPostClassHandoutData.length === 0) return '';
             const pageSize = 10;
             const totalSheets = Math.ceil(currentPostClassHandoutData.length / pageSize);
-            const totalPages = totalSheets * 2;
 
             let pagesHtml = '';
 
@@ -2834,10 +2828,9 @@
                     <div class="page-container page-break">
                         <table class="header-table">
                             <tr>
-                                <td class="header-title">🎤 한영 번역 마스터 유인물 (필사용 - 앞면)</td>
+                                <td class="header-title">🎤 한영 번역 마스터 유인물(필사용 - 앞면)</td>
                                 <td class="header-info">
                                     <span class="info-box">날짜: ________ &nbsp; 학년: _____ &nbsp; 반: _____ &nbsp; 모둠: _____ &nbsp; 역할: _____ &nbsp; 이름: ____________</span>
-                                    &nbsp; <span style="font-weight: 800; color: #000000;">[ ${sheetIdx * 2 + 1} / ${totalPages} Page ]</span>
                                 </td>
                             </tr>
                         </table>
@@ -2878,10 +2871,9 @@
                     <div class="page-container ${isLastPage ? '' : 'page-break'}">
                         <table class="header-table">
                             <tr>
-                                <td class="header-title">🎤 한영 번역 마스터 유인물 (필사용 - 뒷면)</td>
+                                <td class="header-title">🎤 한영 번역 마스터 유인물(필사용 - 뒷면)</td>
                                 <td class="header-info">
                                     <span class="info-box">날짜: ________ &nbsp; 학년: _____ &nbsp; 반: _____ &nbsp; 모둠: _____ &nbsp; 역할: _____ &nbsp; 이름: ____________</span>
-                                    &nbsp; <span style="font-weight: 800; color: #000000;">[ ${sheetIdx * 2 + 2} / ${totalPages} Page ]</span>
                                 </td>
                             </tr>
                         </table>

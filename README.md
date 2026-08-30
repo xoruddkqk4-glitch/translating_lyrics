@@ -114,27 +114,30 @@
 - **필사용 PDF 템플릿 규격 (A4 가로 10문장 단위 양면 인쇄)**:
   - **[앞면]**: `날짜 | 우리말 문장 | 영어 문장위에 쓰기 (회색 글자 외곽선 폰트) | 최대한 안보고 쓰기 (빈칸)`
   - **[뒷면]**: `날짜 | 우리말 문장 | 진짜 안보고 쓰기 (빈칸) | Things to Remember (빈칸)`
-- **머리글 양식 통일**:
-  - 영작용 PDF: `🎤 한영 번역 마스터 유인물(영작용)` + `날짜: ________ | 학년: ____ | 반: ____ | 모둠: ____ | 역할: ____ | 이름: ________`
-  - 필사용 PDF: `🎤 한영 번역 마스터 유인물 (필사용)` + `날짜: ________ | 학년: ____ | 반: ____ | 모둠: ____ | 역할: ____ | 이름: ________`
+- **머리글 양식 통일 및 페이지 배지 삭제**:
+  - 영작용/필사용 유인물 머리글 구조 동일하게 통일 (`타이틀` + `날짜: ________ | 학년: ____ | 반: ____ | 모둠: ____ | 역할: ____ | 이름: ________`)
+  - 유인물 상단 우측의 페이지 정보 배지(`[ Page X / Y ]`, `[ Sheet N 앞면 (X / Y Page) ]`) 전면 삭제
+- **다중 진도 / 다중 학급 운영 구조 설계 피드백 제공**:
+  - 방안 1: 차시별 파일 사본 생성 (가장 단순 & 안정적 운영)
+  - 방안 2: 단일 파일 내 `진도ID` 컬럼 및 다중 원본 시트 도입 (단일 URL 유지 & 진도별 참여 학급/모둠 설정 연동 가능)
 
 ### 🛠️ 2. 코드 수정 및 신규 구현 내용 (Implementation Details)
 - **`index.html`**:
   - 상단 헤더 `#pdfHandoutBtn` 텍스트를 `📝 영작용 pdf(수업전)`으로 변경 및 `#pdfPostHandoutBtn` (`✍️ 필사용 pdf(수업후)`) 추가
   - `updateHeaderUI(view)`에서 학생 전용 접속 시 두 PDF 버튼 모두 비노출, 교사 접속 시 모두 노출되도록 처리
-  - 필사용 PDF 전용 모달 `#pdfPostHandoutModal` 구현
-  - `openPostClassPdfModal()`, `closePostClassPdfModal()`, `renderPostClassHandoutPreview()`, `generatePostClassHandoutFullHtml()`, `printPostClassHandoutPdf()` 함수 구현
-  - 따라쓰기(필사) 폰트 구현: 밑줄(`underline`)을 완전히 제거하고, 글자 테두리를 테마 회색선(`-webkit-text-stroke: 0.8px #888888; color: #ffffff;`)으로 디자인하여 트레이싱 폰트 효과 구현
+  - 필사용 PDF 전용 모달 `#pdfPostHandoutModal` 및 렌더링/인쇄 함수 구현
+  - 따라쓰기(필사) 폰트 구현: 밑줄(`underline`)을 완전히 제거하고, 글자 테두리를 테마 회색선(`-webkit-text-stroke: 0.8px #888888; color: #ffffff;`)으로 디자인하여 외곽선 트레이싱 폰트 효과 구현
+  - `renderHandoutPreview()`, `generateHandoutFullHtml()`, `renderPostClassHandoutPreview()`, `generatePostClassHandoutFullHtml()`에서 페이지 번호 태그 삭제 및 머리글 레이아웃 일체화
 
 ### 💡 3. 발생 문제 및 해결 과정 (Troubleshooting & Solution)
 - **문제 1**: 처음 필사 가이드를 회색 점선 밑줄(`underline dashed`)로 구현하였으나, 텍스트 밑줄이 아니라 글자 자체를 따라 적는 트레이싱 폰트를 의도함.
 - **해결 1**: `text-decoration: underline`을 완전히 삭제하고, CSS `-webkit-text-stroke: 0.8px #888888; color: #ffffff;` 속성을 활용하여 연필로 따라 쓸 수 있는 깨끗한 글자 윤곽선(Outline Tracing Font)으로 수정.
-- **문제 2**: 영작용 및 필사용 유인물의 머리글 양식이 상이하던 점.
-- **해결 2**: 머리글을 요청된 양식(`날짜 | 학년 | 반 | 모둠 | 역할 | 이름`)으로 일관되게 정렬 및 규격화.
+- **문제 2**: 영작용 및 필사용 유인물의 머리글 양식이 상이하고 페이지 배지가 포함되어 인쇄 시 불필요한 공간을 차지하던 점.
+- **해결 2**: 페이지 정보 배지를 삭제하고, 좌측 타이틀과 우측 인적사항 입력란 구조를 두 유인물 모두 동일하게 규격화.
 
 ### ✅ 4. 검증 결과 (Verification Results)
 - **Node.js AST 문법 검증**: `index.html` 내 모든 JavaScript 구문 검사 통과 (`Script 0 valid JS syntax`).
-- **인쇄 media print 검증**: `@media print` 10문장 단위 `.page-break` 자동 페이지 분할 동작 및 A4 가로 양면 출력 레이아웃 정상 동작 확인.
+- **인쇄 media print 검증**: `@media print` 10문장 단위 `.page-break` 자동 페이지 분할 동작, 머리글 레이아웃 통일성, A4 가로 양면 출력 레이아웃 정상 동작 확인.
 
 ---
 *Built with HTML5, Vanilla JavaScript, TailwindCSS, and Google Apps Script*
