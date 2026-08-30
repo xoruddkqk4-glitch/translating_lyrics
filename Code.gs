@@ -686,7 +686,7 @@ function callChatGPT(apiKey, systemPrompt, userPrompt) {
 function callClaude(apiKey, systemPrompt, userPrompt) {
   const url = 'https://api.anthropic.com/v1/messages';
   const payload = {
-    model: 'claude-3-5-sonnet-latest',
+    model: 'claude-3-5-sonnet-20241022',
     max_tokens: 1000,
     system: systemPrompt,
     messages: [
