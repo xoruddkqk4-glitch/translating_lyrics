@@ -112,22 +112,26 @@
 - **방안 2(2-A) 다중 진도(차시) 관리 시스템 구현**:
   - 단일 웹앱 접속 URL(`.../exec?page=student`)을 영구히 유지하면서, 교사가 웹앱 및 구글 시트에서 차시/진도(예: `1차시`, `2차시`, `심화1`~`심화10`)를 자유롭게 교체하고 관리할 수 있도록 기능 구현
   - 현재 활성화된 진도에 맞춰 학생 번역 제출, 동료 평가, AI 피드백, 반별/학년 대표 선정, 비교, PDF 유인물이 연동되도록 아키텍처 확장
-- **단일 `원본정보` 시트 A열 `진도ID` 컬럼 확장**:
-  - 시트를 여러 개 늘리지 않고 단일 `원본정보` 시트의 A열을 **`진도ID`**(`진도ID | 순번 | 담당 역할 | 우리말 문장 | 영어 문장`)로 구성하여 여러 차시 데이터를 통합 작성/관리할 수 있도록 자동 헤더 업그레이드 로직 적용
+- **단일 `원본정보` 시트 A열 `차시ID` 컬럼 확장**:
+  - 시트를 여러 개 늘리지 않고 단일 `원본정보` 시트의 A열을 **`차시ID`**(`차시ID | 순번 | 담당 역할 | 우리말 문장 | 영어 문장`)로 구성하여 여러 차시 데이터를 통합 작성/관리할 수 있도록 자동 헤더 업그레이드 로직 적용
 
 ### 🛠️ 2. 코드 수정 및 신규 구현 내용 (Implementation Details)
 - **`Code.gs`**:
+  - `onOpen()`: 구글 시트 상단에 `[📐 한영번역 마스터] > ⚙️ 시트 초기화 및 차시ID 헤더 갱신` 커스텀 메뉴 추가하여 간편하게 차시ID 컬럼 및 시스템 시트 자동 생성/업그레이드 기능 제공
   - `getSettings()` & `saveSettings()`: `현재 활성 진도`(B9셀) 및 `진도 목록`(B10셀) 항목 추가 및 저장 로직 구현
-  - `setupSheets()`: 기존 `원본정보` 시트의 A열에 `진도ID` 컬럼이 없는 경우 자동으로 A열을 삽입하여 `진도ID | 순번 | 담당 역할 | 우리말 문장 | 영어 문장` 5열 레이아웃으로 자동 업그레이드
-  - `getLyricsData()`, `submitTranslation()`, `getSubmittedAnswers()`, `saveClassBest()`, `saveGradeBest()`, `getPeerEvaluationItems()`, `savePeerEvaluation()`, `getPeerEvaluationResultForStudent()`, `getAiFeedbackData()`, `generateAiFeedback()`, `getComparisonData()`: 선택된 `lessonId`(진도ID) 기반 조회/필터링 및 데이터 저장 로직 반영
+  - `setupSheets()`: 기존 `원본정보` 시트의 A열에 `차시ID` 컬럼이 없는 경우 자동으로 A열을 삽입하여 `차시ID | 순번 | 담당 역할 | 우리말 문장 | 영어 문장` 5열 레이아웃으로 자동 업그레이드 (기존 `진도ID`/`차시`/`Lesson` 헤더도 완벽 호환)
+  - `getLyricsData()`, `submitTranslation()`, `getSubmittedAnswers()`, `saveClassBest()`, `saveGradeBest()`, `getPeerEvaluationItems()`, `savePeerEvaluation()`, `getPeerEvaluationResultForStudent()`, `getAiFeedbackData()`, `generateAiFeedback()`, `getComparisonData()`: 선택된 `lessonId`(차시ID) 기반 조회/필터링 및 데이터 저장 로직 반영
 - **`index.html`**:
   - 교사 상단 헤더 메뉴 우측에 **`📌 1차시 ▼`** 빠른 차시 전환 셀렉터 드롭다운 추가
   - `⚙️ 설정` 화면에 **수업 진도(차시) 관리** 섹션 추가 (`현재 활성 진도` 셀렉터 & `진도 목록` 편집 필드)
   - 차시 전환 시 선택된 차시의 데이터로 교사 대시보드 및 학생 화면 데이터 자동 동기화 및 새로고침 구현
 
 ### 💡 3. 발생 문제 및 해결 과정 (Troubleshooting & Solution)
-- **요청 사항**: 차시별로 시트를 분리하는 방식 대신 1개의 `원본정보` 시트 A열에 `진도ID`를 넣어 단일 시트로 관리하기를 희망함.
-- **해결 방안**: `setupSheets()` 실행 시 기존 4열 시트가 감지되면 A열에 `진도ID` 컬럼을 자동 추가하고 기존 데이터행에 `'1차시'` 값을 채워 넣는 5열 자동 업그레이드 기능 탑재. 또한 개별 차시 시트(`원본정보-심화1` 등) 형태도 동시 호환되도록 조회 유연성 확보.
+- **요청 사항**: '원본정보' 시트에 `차시ID` 열이 생성되지 않았거나 헤더 명이 일치하지 않음.
+- **해결 방안**: 
+  1) `setupSheets()` 실행 시 `원본정보` 시트의 A열 헤더를 **`차시ID`**(`차시ID | 순번 | 담당 역할 | 우리말 문장 | 영어 문장`)로 표준화하고, 기존 4열 구조 데이터인 경우 자동으로 A열 삽입 후 default `'1차시'` 값 자동 채움 적용.
+  2) 기존 `진도ID`, `차시`, `Lesson` 헤더로 입력되어 있던 시트 데이터도 자동 인식되어 데이터 유실 없이 정상 호환되도록 유연한 맵핑 로직 탑재.
+  3) 구글 시트 상단 메뉴에 `[📐 한영번역 마스터] > ⚙️ 시트 초기화 및 차시ID 헤더 갱신` 메뉴(`onOpen`)를 추가하여 누구나 클릭 한 번으로 시트와 헤더를 즉시 생성 및 업그레이드 가능하도록 개선.
 
 ### ✅ 4. 검증 결과 (Verification Results)
 - **Node.js AST 문법 검증**: `Code.gs` 및 `index.html` 내 모든 JavaScript 구문 검사 통과 (`Code.gs syntax VALID`, `index.html script 0 syntax VALID`).
