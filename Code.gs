@@ -46,7 +46,7 @@ function setupSheets() {
     settingsSheet = ss.insertSheet(SHEET_NAMES.SETTINGS);
   }
   settingsSheet.clearContents();
-  settingsSheet.getRange(1, 1, 8, 2).setValues([
+  settingsSheet.getRange(1, 1, 10, 2).setValues([
     ['설정명', '값'],
     ['반이름 나열 (쉼표구분)', '1반, 2반, 3반'],
     ['반별 모둠 개수', 8],
@@ -54,48 +54,60 @@ function setupSheets() {
     ['ChatGPT API 키', ''],
     ['Claude API 키', ''],
     ['동료 평가 참여 활성화', 'Y'],
-    ['동료 평가 결과 확인 활성화', 'Y']
+    ['동료 평가 결과 확인 활성화', 'Y'],
+    ['현재 활성 진도', '1차시'],
+    ['진도 목록 (쉼표구분)', '1차시, 2차시, 3차시']
   ]);
   settingsSheet.getRange("A1:B1").setFontWeight("bold");
   settingsSheet.setColumnWidth(1, 180);
   settingsSheet.setColumnWidth(2, 250);
   
   // 2. 원본정보 ('원본가사'에서 변경됨)
-  let lyricsSheet = ss.getSheetByName(SHEET_NAMES.LYRICS) || ss.getSheetByName('원본가사');
+  let lyricsSheet = ss.getSheetByName(SHEET_NAMES.LYRICS) || ss.getSheetByName('원본정보') || ss.getSheetByName('원본가사');
   if (!lyricsSheet) {
     lyricsSheet = ss.insertSheet(SHEET_NAMES.LYRICS);
-    lyricsSheet.appendRow(['순번', '담당 역할', '우리말 문장', '영어 문장']);
-    lyricsSheet.getRange("A1:D1").setFontWeight("bold");
+    lyricsSheet.appendRow(['진도ID', '순번', '담당 역할', '우리말 문장', '영어 문장']);
+    lyricsSheet.getRange("A1:E1").setFontWeight("bold");
     
     // Example data
     const sampleLyrics = [
-      [1, 'A', '나는 그저 가난한 소년일 뿐입니다.', 'I am just a poor boy'],
-      [2, 'B', '내 이야기는 거의 전해지지 않지만,', 'Though my story is seldom told'],
-      [3, 'C', '나는 내 저항력을 탕진했습니다.', 'I have squandered my resistance'],
-      [4, 'D', '중얼거림 한 주머니를 위해.', 'For a pocketful of mumbles'],
-      [5, 'A', '그런 것들이 약속입니다.', 'Such are promises'],
-      [6, 'B', '모두 거짓과 농담일 뿐,', 'All lies and jest'],
-      [7, 'C', '여전히 사람은 들으려는 것만 듣고,', 'Still a man hears what he wants to hear'],
-      [8, 'D', '나머지는 무시합니다.', 'And disregards the rest'],
+      ['1차시', 1, 'A', '나는 그저 가난한 소년일 뿐입니다.', 'I am just a poor boy'],
+      ['1차시', 2, 'B', '내 이야기는 거의 전해지지 않지만,', 'Though my story is seldom told'],
+      ['1차시', 3, 'C', '나는 내 저항력을 탕진했습니다.', 'I have squandered my resistance'],
+      ['1차시', 4, 'D', '중얼거림 한 주머니를 위해.', 'For a pocketful of mumbles'],
+      ['1차시', 5, 'A', '그런 것들이 약속입니다.', 'Such are promises'],
+      ['1차시', 6, 'B', '모두 거짓과 농담일 뿐,', 'All lies and jest'],
+      ['1차시', 7, 'C', '여전히 사람은 들으려는 것만 듣고,', 'Still a man hears what he wants to hear'],
+      ['1차시', 8, 'D', '나머지는 무시합니다.', 'And disregards the rest'],
     ];
     sampleLyrics.forEach(row => lyricsSheet.appendRow(row));
   } else {
     if (lyricsSheet.getName() !== SHEET_NAMES.LYRICS) {
       lyricsSheet.setName(SHEET_NAMES.LYRICS);
     }
-    lyricsSheet.getRange(1, 1, 1, 4).setValues([['순번', '담당 역할', '우리말 문장', '영어 문장']]);
-    lyricsSheet.getRange("A1:D1").setFontWeight("bold");
+    const firstHeader = String(lyricsSheet.getRange(1, 1).getValue()).trim();
+    if (firstHeader !== '진도ID' && firstHeader !== '차시' && firstHeader !== 'Lesson') {
+      lyricsSheet.insertColumnBefore(1);
+      lyricsSheet.getRange(1, 1).setValue('진도ID');
+      const lastRow = lyricsSheet.getLastRow();
+      if (lastRow > 1) {
+        const fillValues = Array(lastRow - 1).fill(['1차시']);
+        lyricsSheet.getRange(2, 1, lastRow - 1, 1).setValues(fillValues);
+      }
+    }
+    lyricsSheet.getRange(1, 1, 1, 5).setValues([['진도ID', '순번', '담당 역할', '우리말 문장', '영어 문장']]);
+    lyricsSheet.getRange("A1:E1").setFontWeight("bold");
   }
   
   // 3. 제출현황
   let submissionsSheet = ss.getSheetByName(SHEET_NAMES.SUBMISSIONS);
   if (!submissionsSheet) {
     submissionsSheet = ss.insertSheet(SHEET_NAMES.SUBMISSIONS);
-    submissionsSheet.appendRow(['타임스탬프', '반', '모둠', '역할', '순번', '영어 문장']);
-    submissionsSheet.getRange("A1:F1").setFontWeight("bold");
+    submissionsSheet.appendRow(['타임스탬프', '반', '모둠', '역할', '순번', '영어 문장', '진도ID']);
+    submissionsSheet.getRange("A1:G1").setFontWeight("bold");
   } else {
-    submissionsSheet.getRange(1, 1, 1, 6).setValues([['타임스탬프', '반', '모둠', '역할', '순번', '영어 문장']]);
-    submissionsSheet.getRange("A1:F1").setFontWeight("bold");
+    submissionsSheet.getRange(1, 1, 1, 7).setValues([['타임스탬프', '반', '모둠', '역할', '순번', '영어 문장', '진도ID']]);
+    submissionsSheet.getRange("A1:G1").setFontWeight("bold");
   }
   
   // 4. 각 반 시트 ([학급] 반이름)
@@ -105,14 +117,14 @@ function setupSheets() {
     const targetSheetName = `[학급] ${className}`;
     if (!classSheet) {
       classSheet = ss.insertSheet(targetSheetName);
-      classSheet.appendRow(['순번', '영어 문장', '베스트 정답', '채택모둠']);
-      classSheet.getRange("A1:D1").setFontWeight("bold");
+      classSheet.appendRow(['순번', '영어 문장', '베스트 정답', '채택모둠', '진도ID']);
+      classSheet.getRange("A1:E1").setFontWeight("bold");
     } else {
       if (classSheet.getName() !== targetSheetName) {
         classSheet.setName(targetSheetName);
       }
-      classSheet.getRange(1, 1, 1, 4).setValues([['순번', '영어 문장', '베스트 정답', '채택모둠']]);
-      classSheet.getRange("A1:D1").setFontWeight("bold");
+      classSheet.getRange(1, 1, 1, 5).setValues([['순번', '영어 문장', '베스트 정답', '채택모둠', '진도ID']]);
+      classSheet.getRange("A1:E1").setFontWeight("bold");
     }
   });
   
@@ -120,33 +132,33 @@ function setupSheets() {
   let gradeSheet = ss.getSheetByName(SHEET_NAMES.GRADE_BEST);
   if (!gradeSheet) {
     gradeSheet = ss.insertSheet(SHEET_NAMES.GRADE_BEST);
-    gradeSheet.appendRow(['순번', '우리말 문장', '학년 베스트 영어 문장', '출처']);
-    gradeSheet.getRange("A1:D1").setFontWeight("bold");
+    gradeSheet.appendRow(['순번', '우리말 문장', '학년 베스트 영어 문장', '출처', '진도ID']);
+    gradeSheet.getRange("A1:E1").setFontWeight("bold");
   } else {
-    gradeSheet.getRange(1, 1, 1, 4).setValues([['순번', '우리말 문장', '학년 베스트 영어 문장', '출처']]);
-    gradeSheet.getRange("A1:D1").setFontWeight("bold");
+    gradeSheet.getRange(1, 1, 1, 5).setValues([['순번', '우리말 문장', '학년 베스트 영어 문장', '출처', '진도ID']]);
+    gradeSheet.getRange("A1:E1").setFontWeight("bold");
   }
 
   // 6. AI피드백
   let aiSheet = ss.getSheetByName(SHEET_NAMES.AI_FEEDBACK);
   if (!aiSheet) {
     aiSheet = ss.insertSheet(SHEET_NAMES.AI_FEEDBACK);
-    aiSheet.appendRow(['타임스탬프', '반', '모둠', '역할', '순번', '우리말 원문', '학생 영문 번역', '문법 피드백', '어휘 피드백', '표현 피드백', 'Paraphrase 피드백', '제공 AI']);
-    aiSheet.getRange("A1:L1").setFontWeight("bold");
+    aiSheet.appendRow(['타임스탬프', '반', '모둠', '역할', '순번', '우리말 원문', '학생 영문 번역', '문법 피드백', '어휘 피드백', '표현 피드백', 'Paraphrase 피드백', '제공 AI', '진도ID']);
+    aiSheet.getRange("A1:M1").setFontWeight("bold");
   } else {
-    aiSheet.getRange(1, 1, 1, 12).setValues([['타임스탬프', '반', '모둠', '역할', '순번', '우리말 원문', '학생 영문 번역', '문법 피드백', '어휘 피드백', '표현 피드백', 'Paraphrase 피드백', '제공 AI']]);
-    aiSheet.getRange("A1:L1").setFontWeight("bold");
+    aiSheet.getRange(1, 1, 1, 13).setValues([['타임스탬프', '반', '모둠', '역할', '순번', '우리말 원문', '학생 영문 번역', '문법 피드백', '어휘 피드백', '표현 피드백', 'Paraphrase 피드백', '제공 AI', '진도ID']]);
+    aiSheet.getRange("A1:M1").setFontWeight("bold");
   }
 
   // 7. 동료평가
   let peerSheet = ss.getSheetByName(SHEET_NAMES.PEER_EVAL);
   if (!peerSheet) {
     peerSheet = ss.insertSheet(SHEET_NAMES.PEER_EVAL);
-    peerSheet.appendRow(['타임스탬프', '평가자반', '평가자모둠', '평가자역할', '피평가자모둠', '피평가자역할', '피평가자순번', '우리말문장', '피평가자영어문장', '어법점수', '어휘점수', '표현점수', '총점', '객관식설명', '평가유형']);
-    peerSheet.getRange("A1:O1").setFontWeight("bold");
+    peerSheet.appendRow(['타임스탬프', '평가자반', '평가자모둠', '평가자역할', '피평가자모둠', '피평가자역할', '피평가자순번', '우리말문장', '피평가자영어문장', '어법점수', '어휘점수', '표현점수', '총점', '객관식설명', '평가유형', '진도ID']);
+    peerSheet.getRange("A1:P1").setFontWeight("bold");
   } else {
-    peerSheet.getRange(1, 1, 1, 15).setValues([['타임스탬프', '평가자반', '평가자모둠', '평가자역할', '피평가자모둠', '피평가자역할', '피평가자순번', '우리말문장', '피평가자영어문장', '어법점수', '어휘점수', '표현점수', '총점', '객관식설명', '평가유형']]);
-    peerSheet.getRange("A1:O1").setFontWeight("bold");
+    peerSheet.getRange(1, 1, 1, 16).setValues([['타임스탬프', '평가자반', '평가자모둠', '평가자역할', '피평가자모둠', '피평가자역할', '피평가자순번', '우리말문장', '피평가자영어문장', '어법점수', '어휘점수', '표현점수', '총점', '객관식설명', '평가유형', '진도ID']]);
+    peerSheet.getRange("A1:P1").setFontWeight("bold");
   }
 }
 
@@ -166,7 +178,9 @@ function getSettings() {
     chatGptKey: '',
     claudeKey: '',
     enablePeerEvalPart: true,
-    enablePeerEvalResult: true
+    enablePeerEvalResult: true,
+    activeLesson: '1차시',
+    lessonList: ['1차시', '2차시', '3차시']
   };
   
   let foundClasses = false;
@@ -197,6 +211,11 @@ function getSettings() {
       settings.enablePeerEvalPart = (val !== 'N' && val !== 'false' && val !== 'FALSE' && val !== '0');
     } else if (key === '동료 평가 결과 확인 활성화' || key === 'enablePeerEvalResult') {
       settings.enablePeerEvalResult = (val !== 'N' && val !== 'false' && val !== 'FALSE' && val !== '0');
+    } else if (key === '현재 활성 진도' || key === 'activeLesson') {
+      if (val) settings.activeLesson = val;
+    } else if (key === '진도 목록 (쉼표구분)' || key === '진도 목록' || key === 'lessonList') {
+      const parsedLessons = val.split(',').map(s => s.trim()).filter(s => s);
+      if (parsedLessons.length > 0) settings.lessonList = parsedLessons;
     }
   }
   
@@ -209,6 +228,12 @@ function getSettings() {
   
   if (!settings.roles || settings.roles.length === 0) {
     settings.roles = ['A', 'B', 'C', 'D'];
+  }
+  if (!settings.lessonList || settings.lessonList.length === 0) {
+    settings.lessonList = ['1차시', '2차시', '3차시'];
+  }
+  if (!settings.activeLesson) {
+    settings.activeLesson = settings.lessonList[0] || '1차시';
   }
   
   settings.numClasses = settings.classes.length;
@@ -262,48 +287,74 @@ function saveSettings(newSettings) {
   }
   if (classesArr.length === 0) classesArr = ['1반', '2반', '3반'];
 
+  let activeLesson = (newSettings.activeLesson !== undefined && newSettings.activeLesson !== null && String(newSettings.activeLesson).trim() !== '')
+    ? String(newSettings.activeLesson).trim()
+    : (currentSettings.activeLesson || '1차시');
+
+  let lessonListArr = [];
+  if (Array.isArray(newSettings.lessonList)) {
+    lessonListArr = newSettings.lessonList;
+  } else if (typeof newSettings.lessonList === 'string') {
+    lessonListArr = newSettings.lessonList.split(',').map(s => s.trim()).filter(s => s);
+  }
+  if (lessonListArr.length === 0) lessonListArr = currentSettings.lessonList || ['1차시', '2차시', '3차시'];
+  if (!lessonListArr.includes(activeLesson)) lessonListArr.unshift(activeLesson);
+
   const classesStr = classesArr.join(', ');
   const rolesStr = Array.isArray(newSettings.roles) ? newSettings.roles.join(', ') : (newSettings.roles || 'A, B, C, D');
+  const lessonListStr = lessonListArr.join(', ');
+
   const enablePeerEvalPart = (newSettings.enablePeerEvalPart !== false && newSettings.enablePeerEvalPart !== 'N' && newSettings.enablePeerEvalPart !== 'false') ? 'Y' : 'N';
   const enablePeerEvalResult = (newSettings.enablePeerEvalResult !== false && newSettings.enablePeerEvalResult !== 'N' && newSettings.enablePeerEvalResult !== 'false') ? 'Y' : 'N';
   
   sheet.clearContents();
-  sheet.getRange(1, 1, 8, 2).setValues([
+  sheet.getRange(1, 1, 10, 2).setValues([
     ['설정명', '값'],
     ['반이름 나열 (쉼표구분)', classesStr],
-    ['반별 모둠 개수', newSettings.numGroups],
+    ['반별 모둠 개수', newSettings.numGroups || 8],
     ['모둠원 역할 (쉼표구분)', rolesStr],
     ['ChatGPT API 키', chatGptKey || ''],
     ['Claude API 키', claudeKey || ''],
     ['동료 평가 참여 활성화', enablePeerEvalPart],
-    ['동료 평가 결과 확인 활성화', enablePeerEvalResult]
+    ['동료 평가 결과 확인 활성화', enablePeerEvalResult],
+    ['현재 활성 진도', activeLesson],
+    ['진도 목록 (쉼표구분)', lessonListStr]
   ]);
   sheet.getRange("A1:B1").setFontWeight("bold");
   sheet.setColumnWidth(1, 180);
   sheet.setColumnWidth(2, 250);
   
-  // 1. 필요한 반 시트 추가 / 헤더 갱신 / 이름 [학급] 변경
+  // 1-1. 원본정보 시트 검사 (단일 원본정보 시트 + 진도ID 열 방식 & 개별 차시 시트 방식 모두 지원)
+  let defaultLyricsSheet = ss.getSheetByName(SHEET_NAMES.LYRICS) || ss.getSheetByName('원본정보') || ss.getSheetByName('원본가사');
+  if (!defaultLyricsSheet) {
+    defaultLyricsSheet = ss.insertSheet(SHEET_NAMES.LYRICS);
+    defaultLyricsSheet.appendRow(['진도ID', '순번', '담당 역할', '우리말 문장', '영어 문장']);
+    defaultLyricsSheet.getRange("A1:E1").setFontWeight("bold");
+  }
+
+  // 1-2. 필요한 반 시트 추가 / 헤더 갱신 / 이름 [학급] 변경
   classesArr.forEach(className => {
     let classSheet = findClassSheet(ss, className);
     const targetSheetName = `[학급] ${className}`;
     if (!classSheet) {
       classSheet = ss.insertSheet(targetSheetName);
-      classSheet.appendRow(['순번', '영어 문장', '베스트 정답', '채택모둠']);
-      classSheet.getRange("A1:D1").setFontWeight("bold");
+      classSheet.appendRow(['순번', '영어 문장', '베스트 정답', '채택모둠', '진도ID']);
+      classSheet.getRange("A1:E1").setFontWeight("bold");
     } else {
       if (classSheet.getName() !== targetSheetName) {
         classSheet.setName(targetSheetName);
       }
-      classSheet.getRange(1, 1, 1, 4).setValues([['순번', '영어 문장', '베스트 정답', '채택모둠']]);
-      classSheet.getRange("A1:D1").setFontWeight("bold");
+      classSheet.getRange(1, 1, 1, 5).setValues([['순번', '영어 문장', '베스트 정답', '채택모둠', '진도ID']]);
+      classSheet.getRange("A1:E1").setFontWeight("bold");
     }
   });
   
-  // 2. 나열된 반 목록에 포함되지 않는 기존 반 시트 삭제
+  // 2. 나열된 반 목록에 포함되지 않는 불필요한 학급 시트만 삭제 (원본정보 관련 시트는 보존)
   const validSheetNames = classesArr.flatMap(c => [`[학급] ${c}`, `[학급]${c}`, c, `${c}반`]);
   const systemSheetNames = [
     SHEET_NAMES.SETTINGS,
     SHEET_NAMES.LYRICS,
+    '원본정보',
     '원본가사',
     SHEET_NAMES.SUBMISSIONS,
     SHEET_NAMES.GRADE_BEST,
@@ -314,7 +365,8 @@ function saveSettings(newSettings) {
   const sheets = ss.getSheets();
   sheets.forEach(s => {
     const sName = s.getName();
-    if (!systemSheetNames.includes(sName) && !validSheetNames.includes(sName)) {
+    const isOriginalSheet = sName.startsWith('원본') || sName.startsWith('[원본]');
+    if (!systemSheetNames.includes(sName) && !validSheetNames.includes(sName) && !isOriginalSheet) {
       ss.deleteSheet(s);
     }
   });
@@ -322,34 +374,80 @@ function saveSettings(newSettings) {
   return true;
 }
 
-function getLyricsData() {
+function getLyricsData(lessonId) {
+  const settings = getSettings();
+  const targetLesson = (lessonId && String(lessonId).trim()) ? String(lessonId).trim() : (settings.activeLesson || '1차시');
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName(SHEET_NAMES.LYRICS) || ss.getSheetByName('원본가사');
+
+  const candidateNames = [
+    `원본정보-${targetLesson}`,
+    `원본가사-${targetLesson}`,
+    `원본-${targetLesson}`,
+    `원본정보_${targetLesson}`,
+    `원본가사_${targetLesson}`,
+    `원본_${targetLesson}`,
+    `[원본] ${targetLesson}`,
+    SHEET_NAMES.LYRICS,
+    '원본정보',
+    '원본가사'
+  ];
+
+  let sheet = null;
+  for (let name of candidateNames) {
+    sheet = ss.getSheetByName(name);
+    if (sheet) break;
+  }
+
   if (!sheet) return [];
   const data = sheet.getDataRange().getValues();
+  if (data.length <= 1) return [];
+
+  const headers = data[0].map(h => String(h).trim());
+  let lessonColIdx = -1;
+  let seqColIdx = 0;
+  let roleColIdx = 1;
+  let korColIdx = 2;
+  let engColIdx = 3;
+
+  if (headers[0] === '진도ID' || headers[0] === '차시' || headers[0] === 'Lesson') {
+    lessonColIdx = 0;
+    seqColIdx = 1;
+    roleColIdx = 2;
+    korColIdx = 3;
+    engColIdx = 4;
+  }
+
   let lyrics = [];
   for (let i = 1; i < data.length; i++) {
-    if (data[i][0]) {
+    const row = data[i];
+    if (lessonColIdx !== -1) {
+      const rowLesson = row[lessonColIdx] ? String(row[lessonColIdx]).trim() : '';
+      if (rowLesson !== targetLesson && rowLesson !== '') continue;
+    }
+    if (row[seqColIdx]) {
       lyrics.push({
-        seq: data[i][0],
-        role: data[i][1],
-        korean: data[i][2] || '',
-        lyric: data[i][3] || data[i][2] || ''
+        seq: row[seqColIdx],
+        role: row[roleColIdx] ? String(row[roleColIdx]).trim() : 'A',
+        korean: row[korColIdx] || '',
+        lyric: row[engColIdx] || row[korColIdx] || '',
+        lessonId: targetLesson
       });
     }
   }
   return lyrics;
 }
 
-function getLyricsByRole(role, classNum, groupNum) {
-  const allLyrics = getLyricsData();
+function getLyricsByRole(role, classNum, groupNum, lessonId) {
+  const targetLesson = (lessonId && String(lessonId).trim()) ? String(lessonId).trim() : getSettings().activeLesson;
+  const allLyrics = getLyricsData(targetLesson);
   const filtered = allLyrics.filter(item => item.role === role);
 
   if (classNum && groupNum) {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const subSheet = ss.getSheetByName(SHEET_NAMES.SUBMISSIONS);
     if (subSheet && subSheet.getLastRow() > 1) {
-      const subData = subSheet.getRange(2, 1, subSheet.getLastRow() - 1, 6).getValues();
+      const subCols = Math.max(7, subSheet.getLastColumn());
+      const subData = subSheet.getRange(2, 1, subSheet.getLastRow() - 1, subCols).getValues();
       let prevMap = {};
       subData.forEach(r => {
         let t_stamp = r[0];
@@ -358,8 +456,9 @@ function getLyricsByRole(role, classNum, groupNum) {
         let t_role = r[3];
         let t_seq = r[4];
         let t_trans = r[5];
+        let t_lesson = r[6] ? String(r[6]).trim() : '1차시';
 
-        if (t_class == classNum && t_group == groupNum && t_role == role) {
+        if (t_class == classNum && t_group == groupNum && t_role == role && (t_lesson == targetLesson || (!r[6] && targetLesson == '1차시'))) {
           if (!prevMap[t_seq] || t_stamp > prevMap[t_seq].timestamp) {
             prevMap[t_seq] = { translation: t_trans, timestamp: t_stamp };
           }
@@ -381,6 +480,7 @@ function submitTranslation(studentData, answers) {
   const sheet = ss.getSheetByName(SHEET_NAMES.SUBMISSIONS);
   if (!sheet) throw new Error('제출현황 시트를 찾을 수 없습니다.');
   
+  const targetLesson = studentData.lessonId || getSettings().activeLesson;
   const timestamp = new Date();
   const rows = answers.map(ans => [
     timestamp,
@@ -388,7 +488,8 @@ function submitTranslation(studentData, answers) {
     studentData.groupNum,
     studentData.role,
     ans.seq,
-    ans.translation
+    ans.translation,
+    targetLesson
   ]);
   
   if (rows.length > 0) {
@@ -411,30 +512,19 @@ function submitTranslation(studentData, answers) {
   return true;
 }
 
-function getSubmittedAnswers(classNum) {
+function getSubmittedAnswers(classNum, lessonId) {
+  const targetLesson = (lessonId && String(lessonId).trim()) ? String(lessonId).trim() : getSettings().activeLesson;
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheetsMap = {};
   ss.getSheets().forEach(s => { sheetsMap[s.getName()] = s; });
 
-  const lyricsSheet = sheetsMap[SHEET_NAMES.LYRICS] || sheetsMap['원본가사'];
-  let lyrics = [];
-  if (lyricsSheet && lyricsSheet.getLastRow() > 1) {
-    const maxCols = Math.max(4, lyricsSheet.getLastColumn());
-    const lData = lyricsSheet.getRange(2, 1, lyricsSheet.getLastRow() - 1, maxCols).getValues();
-    lData.forEach(r => {
-      if (r[0]) lyrics.push({
-        seq: r[0],
-        role: r[1],
-        korean: r[2] || '',
-        lyric: r[3] || r[2] || ''
-      });
-    });
-  }
+  const lyrics = getLyricsData(targetLesson);
 
   const subSheet = sheetsMap[SHEET_NAMES.SUBMISSIONS];
   let subData = [];
   if (subSheet && subSheet.getLastRow() > 1) {
-    subData = subSheet.getRange(2, 1, subSheet.getLastRow() - 1, 6).getValues();
+    const maxCols = Math.max(7, subSheet.getLastColumn());
+    subData = subSheet.getRange(2, 1, subSheet.getLastRow() - 1, maxCols).getValues();
   }
   
   let subMap = {};
@@ -444,8 +534,9 @@ function getSubmittedAnswers(classNum) {
     let t_group = r[2];
     let t_seq = r[4];
     let t_trans = r[5];
+    let t_lesson = r[6] ? String(r[6]).trim() : '1차시';
     
-    if (t_class == classNum) {
+    if (t_class == classNum && (t_lesson == targetLesson || (!r[6] && targetLesson == '1차시'))) {
       if (!subMap[t_seq]) subMap[t_seq] = {};
       if (!subMap[t_seq][t_group] || t_stamp > subMap[t_seq][t_group].timestamp) {
         subMap[t_seq][t_group] = {
@@ -459,15 +550,19 @@ function getSubmittedAnswers(classNum) {
   const classSheet = findClassSheet(ss, classNum);
   let bestMap = {};
   if (classSheet && classSheet.getLastRow() > 1) {
-    const classData = classSheet.getRange(2, 1, classSheet.getLastRow() - 1, 4).getValues();
+    const maxCols = Math.max(5, classSheet.getLastColumn());
+    const classData = classSheet.getRange(2, 1, classSheet.getLastRow() - 1, maxCols).getValues();
     classData.forEach(r => {
       let b_seq = r[0];
       let b_best = r[2];
       let b_groups = r[3];
-      bestMap[b_seq] = {
-        best: b_best,
-        groups: b_groups ? b_groups.toString().split(',').map(g => parseInt(g.trim())).filter(g => !isNaN(g)) : []
-      };
+      let b_lesson = r[4] ? String(r[4]).trim() : '1차시';
+      if (b_lesson == targetLesson || (!r[4] && targetLesson == '1차시')) {
+        bestMap[b_seq] = {
+          best: b_best,
+          groups: b_groups ? b_groups.toString().split(',').map(g => parseInt(g.trim())).filter(g => !isNaN(g)) : []
+        };
+      }
     });
   }
   
@@ -491,22 +586,29 @@ function getSubmittedAnswers(classNum) {
   });
 }
 
-function saveClassBest(classNum, seq, lyricText, bestAnswer, groupIds) {
+function saveClassBest(classNum, seq, lyricText, bestAnswer, groupIds, lessonId) {
+  const targetLesson = (lessonId && String(lessonId).trim()) ? String(lessonId).trim() : getSettings().activeLesson;
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   let classSheet = findClassSheet(ss, classNum);
   const targetSheetName = `[학급] ${classNum}`;
   if (!classSheet) {
     classSheet = ss.insertSheet(targetSheetName);
-    classSheet.appendRow(['순번', '영어 문장', '베스트 정답', '채택모둠']);
-    classSheet.getRange("A1:D1").setFontWeight("bold");
+    classSheet.appendRow(['순번', '영어 문장', '베스트 정답', '채택모둠', '진도ID']);
+    classSheet.getRange("A1:E1").setFontWeight("bold");
+  } else {
+    classSheet.getRange(1, 1, 1, 5).setValues([['순번', '영어 문장', '베스트 정답', '채택모둠', '진도ID']]);
+    classSheet.getRange("A1:E1").setFontWeight("bold");
   }
   
   const lastRow = classSheet.getLastRow();
   let foundRow = -1;
   if (lastRow > 1) {
-    const seqData = classSheet.getRange(2, 1, lastRow - 1, 1).getValues();
-    for (let i = 0; i < seqData.length; i++) {
-      if (seqData[i][0] == seq) {
+    const maxCols = Math.max(5, classSheet.getLastColumn());
+    const data = classSheet.getRange(2, 1, lastRow - 1, maxCols).getValues();
+    for (let i = 0; i < data.length; i++) {
+      let r_seq = data[i][0];
+      let r_lesson = data[i][4] ? String(data[i][4]).trim() : '1차시';
+      if (r_seq == seq && (r_lesson == targetLesson || (!data[i][4] && targetLesson == '1차시'))) {
         foundRow = i + 2;
         break;
       }
@@ -516,25 +618,28 @@ function saveClassBest(classNum, seq, lyricText, bestAnswer, groupIds) {
   const groupsStr = Array.isArray(groupIds) ? groupIds.join(', ') : (groupIds || '');
   
   if (foundRow > -1) {
-    classSheet.getRange(foundRow, 2, 1, 3).setValues([[lyricText, bestAnswer, groupsStr]]);
+    classSheet.getRange(foundRow, 2, 1, 4).setValues([[lyricText, bestAnswer, groupsStr, targetLesson]]);
   } else {
-    classSheet.appendRow([seq, lyricText, bestAnswer, groupsStr]);
+    classSheet.appendRow([seq, lyricText, bestAnswer, groupsStr, targetLesson]);
   }
   return true;
 }
 
-function getLeaderboard(classNum) {
+function getLeaderboard(classNum, lessonId) {
+  const targetLesson = (lessonId && String(lessonId).trim()) ? String(lessonId).trim() : getSettings().activeLesson;
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const classSheet = findClassSheet(ss, classNum);
   
   if (!classSheet || classSheet.getLastRow() <= 1) return [];
   
-  const data = classSheet.getRange(2, 1, classSheet.getLastRow() - 1, 4).getValues();
+  const maxCols = Math.max(5, classSheet.getLastColumn());
+  const data = classSheet.getRange(2, 1, classSheet.getLastRow() - 1, maxCols).getValues();
   let groupCounts = {};
   
   data.forEach(r => {
     let groupsStr = r[3];
-    if (groupsStr) {
+    let r_lesson = r[4] ? String(r[4]).trim() : '1차시';
+    if ((r_lesson == targetLesson || (!r[4] && targetLesson == '1차시')) && groupsStr) {
       let groups = groupsStr.toString().split(',').map(s => s.trim()).filter(s => s);
       groups.forEach(g => {
         groupCounts[g] = (groupCounts[g] || 0) + 1;
@@ -551,37 +656,28 @@ function getLeaderboard(classNum) {
   return result;
 }
 
-function getAllClassesBest() {
+function getAllClassesBest(lessonId) {
+  const targetLesson = (lessonId && String(lessonId).trim()) ? String(lessonId).trim() : getSettings().activeLesson;
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheetsMap = {};
   ss.getSheets().forEach(s => { sheetsMap[s.getName()] = s; });
   
-  const lyricsSheet = sheetsMap[SHEET_NAMES.LYRICS] || sheetsMap['원본가사'];
-  let lyrics = [];
-  if (lyricsSheet && lyricsSheet.getLastRow() > 1) {
-    const maxCols = Math.max(4, lyricsSheet.getLastColumn());
-    const lData = lyricsSheet.getRange(2, 1, lyricsSheet.getLastRow() - 1, maxCols).getValues();
-    lData.forEach(r => {
-      if (r[0]) lyrics.push({
-        seq: r[0],
-        role: r[1],
-        korean: r[2] || '',
-        lyric: r[3] || r[2] || ''
-      });
-    });
-  }
-
+  const lyrics = getLyricsData(targetLesson);
   const settings = getSettings();
   
   const gradeSheet = sheetsMap[SHEET_NAMES.GRADE_BEST];
   let gradeBestMap = {};
   if (gradeSheet && gradeSheet.getLastRow() > 1) {
-    const gradeData = gradeSheet.getRange(2, 1, gradeSheet.getLastRow() - 1, 4).getValues();
+    const maxCols = Math.max(5, gradeSheet.getLastColumn());
+    const gradeData = gradeSheet.getRange(2, 1, gradeSheet.getLastRow() - 1, maxCols).getValues();
     gradeData.forEach(r => {
-      gradeBestMap[r[0]] = {
-        best: r[2],
-        source: r[3]
-      };
+      let g_lesson = r[4] ? String(r[4]).trim() : '1차시';
+      if (g_lesson == targetLesson || (!r[4] && targetLesson == '1차시')) {
+        gradeBestMap[r[0]] = {
+          best: r[2],
+          source: r[3]
+        };
+      }
     });
   }
   
@@ -590,12 +686,16 @@ function getAllClassesBest() {
     classBestsMap[cName] = {};
     let cSheet = findClassSheet(ss, cName);
     if (cSheet && cSheet.getLastRow() > 1) {
-      const cData = cSheet.getRange(2, 1, cSheet.getLastRow() - 1, 4).getValues();
+      const maxCols = Math.max(5, cSheet.getLastColumn());
+      const cData = cSheet.getRange(2, 1, cSheet.getLastRow() - 1, maxCols).getValues();
       cData.forEach(r => {
-        classBestsMap[cName][r[0]] = {
-          best: r[2],
-          groups: r[3]
-        };
+        let c_lesson = r[4] ? String(r[4]).trim() : '1차시';
+        if (c_lesson == targetLesson || (!r[4] && targetLesson == '1차시')) {
+          classBestsMap[cName][r[0]] = {
+            best: r[2],
+            groups: r[3]
+          };
+        }
       });
     }
   });
@@ -619,24 +719,28 @@ function getAllClassesBest() {
   });
 }
 
-function saveGradeBest(seq, lyricText, bestAnswer, sourceStr) {
+function saveGradeBest(seq, lyricText, bestAnswer, sourceStr, lessonId) {
+  const targetLesson = (lessonId && String(lessonId).trim()) ? String(lessonId).trim() : getSettings().activeLesson;
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   let gradeSheet = ss.getSheetByName(SHEET_NAMES.GRADE_BEST);
   if (!gradeSheet) {
     gradeSheet = ss.insertSheet(SHEET_NAMES.GRADE_BEST);
-    gradeSheet.appendRow(['순번', '우리말 문장', '학년 베스트 영어 문장', '출처']);
-    gradeSheet.getRange("A1:D1").setFontWeight("bold");
+    gradeSheet.appendRow(['순번', '우리말 문장', '학년 베스트 영어 문장', '출처', '진도ID']);
+    gradeSheet.getRange("A1:E1").setFontWeight("bold");
   } else {
-    gradeSheet.getRange(1, 1, 1, 4).setValues([['순번', '우리말 문장', '학년 베스트 영어 문장', '출처']]);
-    gradeSheet.getRange("A1:D1").setFontWeight("bold");
+    gradeSheet.getRange(1, 1, 1, 5).setValues([['순번', '우리말 문장', '학년 베스트 영어 문장', '출처', '진도ID']]);
+    gradeSheet.getRange("A1:E1").setFontWeight("bold");
   }
   
   const lastRow = gradeSheet.getLastRow();
   let foundRow = -1;
   if (lastRow > 1) {
-    const seqData = gradeSheet.getRange(2, 1, lastRow - 1, 1).getValues();
-    for (let i = 0; i < seqData.length; i++) {
-      if (seqData[i][0] == seq) {
+    const maxCols = Math.max(5, gradeSheet.getLastColumn());
+    const data = gradeSheet.getRange(2, 1, lastRow - 1, maxCols).getValues();
+    for (let i = 0; i < data.length; i++) {
+      let r_seq = data[i][0];
+      let r_lesson = data[i][4] ? String(data[i][4]).trim() : '1차시';
+      if (r_seq == seq && (r_lesson == targetLesson || (!data[i][4] && targetLesson == '1차시'))) {
         foundRow = i + 2;
         break;
       }
@@ -644,9 +748,9 @@ function saveGradeBest(seq, lyricText, bestAnswer, sourceStr) {
   }
   
   if (foundRow > -1) {
-    gradeSheet.getRange(foundRow, 2, 1, 3).setValues([[lyricText, bestAnswer, sourceStr]]);
+    gradeSheet.getRange(foundRow, 2, 1, 4).setValues([[lyricText, bestAnswer, sourceStr, targetLesson]]);
   } else {
-    gradeSheet.appendRow([seq, lyricText, bestAnswer, sourceStr]);
+    gradeSheet.appendRow([seq, lyricText, bestAnswer, sourceStr, targetLesson]);
   }
   return true;
 }
@@ -737,7 +841,6 @@ function callClaude(apiKey, systemPrompt, userPrompt) {
     }
 
     lastErrorText = resText;
-    // 404 (not_found_error) 발생 시 다음 호환 모델로 자동 순회 시도
     if (resCode === 404) {
       continue;
     } else {
@@ -753,7 +856,6 @@ function parseAiResponseJson(rawText) {
 
   let clean = rawText.trim();
   
-  // 1. JSON 문자열 영역 추출 (마크다운 코드블록 또는 { ... } 영역 캡처)
   const jsonBlockMatch = clean.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
   if (jsonBlockMatch) {
     clean = jsonBlockMatch[1].trim();
@@ -765,14 +867,12 @@ function parseAiResponseJson(rawText) {
     }
   }
 
-  // 이중 따옴표("" -> ") 변환 처리
   if (clean.includes('""')) {
     clean = clean.replace(/""/g, '"');
   }
 
   let obj = null;
 
-  // 2. JSON 파싱 시도
   try {
     obj = JSON.parse(clean);
   } catch (e1) {
@@ -788,7 +888,6 @@ function parseAiResponseJson(rawText) {
       });
       obj = JSON.parse(fixedJson);
     } catch (e2) {
-      // 정규표현식 Fallback
       let grammar = '', vocabulary = '', expression = '', overall = '';
       
       const gMatch = clean.match(/"(?:grammar|grammarFeedback|Grammar)"\s*:\s*"([\s\S]*?)"\s*,\s*"/i);
@@ -807,7 +906,6 @@ function parseAiResponseJson(rawText) {
     }
   }
 
-  // 3. 키 이름 대소문자 및 변형 유연 처리
   if (obj && typeof obj === 'object') {
     const getKey = (...keys) => {
       for (let k of keys) {
@@ -815,7 +913,6 @@ function parseAiResponseJson(rawText) {
           return String(obj[k]).trim();
         }
       }
-      // 대소문자 구분 없는 검색
       const lowerObj = {};
       Object.keys(obj).forEach(key => { lowerObj[key.toLowerCase()] = obj[key]; });
       for (let k of keys) {
@@ -843,12 +940,14 @@ function parseAiResponseJson(rawText) {
   };
 }
 
-function getAiFeedbackData(classNum) {
+function getAiFeedbackData(classNum, lessonId) {
+  const targetLesson = (lessonId && String(lessonId).trim()) ? String(lessonId).trim() : getSettings().activeLesson;
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const aiSheet = ss.getSheetByName(SHEET_NAMES.AI_FEEDBACK);
   if (!aiSheet || aiSheet.getLastRow() <= 1) return [];
 
-  const data = aiSheet.getRange(2, 1, aiSheet.getLastRow() - 1, 12).getValues();
+  const maxCols = Math.max(13, aiSheet.getLastColumn());
+  const data = aiSheet.getRange(2, 1, aiSheet.getLastRow() - 1, maxCols).getValues();
   let list = [];
   data.forEach(r => {
     let t_stamp = r[0];
@@ -863,8 +962,9 @@ function getAiFeedbackData(classNum) {
     let t_expr = r[9];
     let t_overall = r[10];
     let t_provider = r[11];
+    let t_lesson = r[12] ? String(r[12]).trim() : '1차시';
 
-    if (!classNum || t_class == classNum) {
+    if ((!classNum || t_class == classNum) && (t_lesson == targetLesson || (!r[12] && targetLesson == '1차시'))) {
       list.push({
         timestamp: t_stamp,
         classNum: t_class,
@@ -877,14 +977,16 @@ function getAiFeedbackData(classNum) {
         vocabulary: t_vocab,
         expression: t_expr,
         overall: t_overall,
-        provider: t_provider
+        provider: t_provider,
+        lessonId: t_lesson
       });
     }
   });
   return list;
 }
 
-function generateAiFeedback(classNum, provider) {
+function generateAiFeedback(classNum, provider, lessonId) {
+  const targetLesson = (lessonId && String(lessonId).trim()) ? String(lessonId).trim() : getSettings().activeLesson;
   const settings = getSettings();
   let apiKey = '';
   let providerName = '';
@@ -905,15 +1007,14 @@ function generateAiFeedback(classNum, provider) {
 
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   
-  // 1. 제출현황 시트에서 최신 답안 조회
   const subSheet = ss.getSheetByName(SHEET_NAMES.SUBMISSIONS);
   if (!subSheet || subSheet.getLastRow() <= 1) {
     throw new Error('제출현황 시트에 학생 제출 데이터가 없습니다.');
   }
 
-  const subData = subSheet.getRange(2, 1, subSheet.getLastRow() - 1, 6).getValues();
+  const maxSubCols = Math.max(7, subSheet.getLastColumn());
+  const subData = subSheet.getRange(2, 1, subSheet.getLastRow() - 1, maxSubCols).getValues();
   
-  // 최신 제출만 추출 (seq + group 기준)
   let latestMap = {};
   subData.forEach(r => {
     let t_stamp = r[0];
@@ -922,8 +1023,9 @@ function generateAiFeedback(classNum, provider) {
     let t_role = r[3];
     let t_seq = r[4];
     let t_trans = r[5];
+    let t_lesson = r[6] ? String(r[6]).trim() : '1차시';
 
-    if (t_class == classNum && t_trans && t_trans.toString().trim()) {
+    if (t_class == classNum && (t_lesson == targetLesson || (!r[6] && targetLesson == '1차시')) && t_trans && String(t_trans).trim()) {
       let key = `${t_seq}_${t_group}`;
       if (!latestMap[key] || t_stamp > latestMap[key].timestamp) {
         latestMap[key] = {
@@ -943,19 +1045,17 @@ function generateAiFeedback(classNum, provider) {
     throw new Error(`${classNum}반 학생들의 제출된 영어 번역이 없습니다.`);
   }
 
-  // 2. 원본정보에서 우리말 문장 매핑
-  const lyrics = getLyricsData();
+  const lyrics = getLyricsData(targetLesson);
   let lyricMap = {};
   lyrics.forEach(l => { lyricMap[l.seq] = l.korean || l.lyric; });
 
-  // 3. AI피드백 시트 가져오기 또는 생성 및 헤더 자동 갱신
   let aiSheet = ss.getSheetByName(SHEET_NAMES.AI_FEEDBACK);
   if (!aiSheet) {
     setupSheets();
     aiSheet = ss.getSheetByName(SHEET_NAMES.AI_FEEDBACK);
   } else {
-    aiSheet.getRange(1, 1, 1, 12).setValues([['타임스탬프', '반', '모둠', '역할', '순번', '우리말 원문', '학생 영문 번역', '문법 피드백', '어휘 피드백', '표현 피드백', 'Paraphrase 피드백', '제공 AI']]);
-    aiSheet.getRange("A1:L1").setFontWeight("bold");
+    aiSheet.getRange(1, 1, 1, 13).setValues([['타임스탬프', '반', '모둠', '역할', '순번', '우리말 원문', '학생 영문 번역', '문법 피드백', '어휘 피드백', '표현 피드백', 'Paraphrase 피드백', '제공 AI', '진도ID']]);
+    aiSheet.getRange("A1:M1").setFontWeight("bold");
   }
 
   const systemPrompt = `당신은 친절하고 전문적인 중·고등학교 영어 선생님이자 번역 및 Paraphrasing 평가 전문가입니다.
@@ -1124,37 +1224,27 @@ function clearTestData() {
   return true;
 }
 
-function getComparisonData() {
+function getComparisonData(lessonId) {
+  const targetLesson = (lessonId && String(lessonId).trim()) ? String(lessonId).trim() : getSettings().activeLesson;
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheetsMap = {};
   ss.getSheets().forEach(s => { sheetsMap[s.getName()] = s; });
   
-  const lyricsSheet = sheetsMap[SHEET_NAMES.LYRICS] || sheetsMap['원본가사'];
-  let lyrics = [];
-  if (lyricsSheet && lyricsSheet.getLastRow() > 1) {
-    const maxCols = Math.max(4, lyricsSheet.getLastColumn());
-    const lData = lyricsSheet.getRange(2, 1, lyricsSheet.getLastRow() - 1, maxCols).getValues();
-    lData.forEach(r => {
-      if (r[0]) {
-        lyrics.push({
-          seq: r[0],
-          role: r[1],
-          korean: r[2] || '',
-          originalEnglish: r[3] || ''
-        });
-      }
-    });
-  }
+  const lyrics = getLyricsData(targetLesson);
 
   const gradeSheet = sheetsMap[SHEET_NAMES.GRADE_BEST];
   let gradeBestMap = {};
   if (gradeSheet && gradeSheet.getLastRow() > 1) {
-    const gradeData = gradeSheet.getRange(2, 1, gradeSheet.getLastRow() - 1, 4).getValues();
+    const maxCols = Math.max(5, gradeSheet.getLastColumn());
+    const gradeData = gradeSheet.getRange(2, 1, gradeSheet.getLastRow() - 1, maxCols).getValues();
     gradeData.forEach(r => {
-      gradeBestMap[r[0]] = {
-        best: r[2] || '',
-        source: r[3] || ''
-      };
+      let g_lesson = r[4] ? String(r[4]).trim() : '1차시';
+      if (g_lesson == targetLesson || (!r[4] && targetLesson == '1차시')) {
+        gradeBestMap[r[0]] = {
+          best: r[2] || '',
+          source: r[3] || ''
+        };
+      }
     });
   }
 
@@ -1164,7 +1254,7 @@ function getComparisonData() {
       seq: lyric.seq,
       role: lyric.role,
       korean: lyric.korean,
-      originalEnglish: lyric.originalEnglish,
+      originalEnglish: lyric.lyric,
       gradeBest: gBest.best || '',
       gradeBestSource: gBest.source || ''
     };

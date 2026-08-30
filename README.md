@@ -109,35 +109,29 @@
 ## 📝 최신 업데이트 기록 (Commit & Change Log)
 
 ### 📌 1. 사용자 주요 요청 사항 (User Requirements)
-- 교사 페이지 상단 메뉴에 **`✍️ 필사용 pdf(수업후)`** 다운로드/인쇄 기능 추가
-- 기존 `📄 유인물 PDF/인쇄` 버튼 명칭을 **`📝 영작용 pdf(수업전)`**으로 변경
-- **필사용 PDF 템플릿 규격 (A4 가로 10문장 단위 양면 인쇄)**:
-  - **[앞면]**: `날짜 | 우리말 문장 | 영어 문장위에 쓰기 (회색 글자 외곽선 폰트) | 최대한 안보고 쓰기 (빈칸)`
-  - **[뒷면]**: `날짜 | 우리말 문장 | 진짜 안보고 쓰기 (빈칸) | Things to Remember (빈칸)`
-- **머리글 양식 통일 및 페이지 배지 삭제**:
-  - 영작용/필사용 유인물 머리글 구조 동일하게 통일 (`타이틀` + `날짜: ________ | 학년: ____ | 반: ____ | 모둠: ____ | 역할: ____ | 이름: ________`)
-  - 유인물 상단 우측의 페이지 정보 배지(`[ Page X / Y ]`, `[ Sheet N 앞면 (X / Y Page) ]`) 전면 삭제
-- **다중 진도 / 다중 학급 운영 구조 설계 피드백 제공**:
-  - 방안 1: 차시별 파일 사본 생성 (가장 단순 & 안정적 운영)
-  - 방안 2: 단일 파일 내 `진도ID` 컬럼 및 다중 원본 시트 도입 (단일 URL 유지 & 진도별 참여 학급/모둠 설정 연동 가능)
+- **방안 2(2-A) 다중 진도(차시) 관리 시스템 구현**:
+  - 단일 웹앱 접속 URL(`.../exec?page=student`)을 영구히 유지하면서, 교사가 웹앱 및 구글 시트에서 차시/진도(예: `1차시`, `2차시`, `심화1`~`심화10`)를 자유롭게 교체하고 관리할 수 있도록 기능 구현
+  - 현재 활성화된 진도에 맞춰 학생 번역 제출, 동료 평가, AI 피드백, 반별/학년 대표 선정, 비교, PDF 유인물이 연동되도록 아키텍처 확장
+- **단일 `원본정보` 시트 A열 `진도ID` 컬럼 확장**:
+  - 시트를 여러 개 늘리지 않고 단일 `원본정보` 시트의 A열을 **`진도ID`**(`진도ID | 순번 | 담당 역할 | 우리말 문장 | 영어 문장`)로 구성하여 여러 차시 데이터를 통합 작성/관리할 수 있도록 자동 헤더 업그레이드 로직 적용
 
 ### 🛠️ 2. 코드 수정 및 신규 구현 내용 (Implementation Details)
+- **`Code.gs`**:
+  - `getSettings()` & `saveSettings()`: `현재 활성 진도`(B9셀) 및 `진도 목록`(B10셀) 항목 추가 및 저장 로직 구현
+  - `setupSheets()`: 기존 `원본정보` 시트의 A열에 `진도ID` 컬럼이 없는 경우 자동으로 A열을 삽입하여 `진도ID | 순번 | 담당 역할 | 우리말 문장 | 영어 문장` 5열 레이아웃으로 자동 업그레이드
+  - `getLyricsData()`, `submitTranslation()`, `getSubmittedAnswers()`, `saveClassBest()`, `saveGradeBest()`, `getPeerEvaluationItems()`, `savePeerEvaluation()`, `getPeerEvaluationResultForStudent()`, `getAiFeedbackData()`, `generateAiFeedback()`, `getComparisonData()`: 선택된 `lessonId`(진도ID) 기반 조회/필터링 및 데이터 저장 로직 반영
 - **`index.html`**:
-  - 상단 헤더 `#pdfHandoutBtn` 텍스트를 `📝 영작용 pdf(수업전)`으로 변경 및 `#pdfPostHandoutBtn` (`✍️ 필사용 pdf(수업후)`) 추가
-  - `updateHeaderUI(view)`에서 학생 전용 접속 시 두 PDF 버튼 모두 비노출, 교사 접속 시 모두 노출되도록 처리
-  - 필사용 PDF 전용 모달 `#pdfPostHandoutModal` 및 렌더링/인쇄 함수 구현
-  - 따라쓰기(필사) 폰트 구현: 밑줄(`underline`)을 완전히 제거하고, 글자 테두리를 테마 회색선(`-webkit-text-stroke: 0.8px #888888; color: #ffffff;`)으로 디자인하여 외곽선 트레이싱 폰트 효과 구현
-  - `renderHandoutPreview()`, `generateHandoutFullHtml()`, `renderPostClassHandoutPreview()`, `generatePostClassHandoutFullHtml()`에서 페이지 번호 태그 삭제 및 머리글 레이아웃 일체화
+  - 교사 상단 헤더 메뉴 우측에 **`📌 1차시 ▼`** 빠른 차시 전환 셀렉터 드롭다운 추가
+  - `⚙️ 설정` 화면에 **수업 진도(차시) 관리** 섹션 추가 (`현재 활성 진도` 셀렉터 & `진도 목록` 편집 필드)
+  - 차시 전환 시 선택된 차시의 데이터로 교사 대시보드 및 학생 화면 데이터 자동 동기화 및 새로고침 구현
 
 ### 💡 3. 발생 문제 및 해결 과정 (Troubleshooting & Solution)
-- **문제 1**: 처음 필사 가이드를 회색 점선 밑줄(`underline dashed`)로 구현하였으나, 텍스트 밑줄이 아니라 글자 자체를 따라 적는 트레이싱 폰트를 의도함.
-- **해결 1**: `text-decoration: underline`을 완전히 삭제하고, CSS `-webkit-text-stroke: 0.8px #888888; color: #ffffff;` 속성을 활용하여 연필로 따라 쓸 수 있는 깨끗한 글자 윤곽선(Outline Tracing Font)으로 수정.
-- **문제 2**: 영작용 및 필사용 유인물의 머리글 양식이 상이하고 페이지 배지가 포함되어 인쇄 시 불필요한 공간을 차지하던 점.
-- **해결 2**: 페이지 정보 배지를 삭제하고, 좌측 타이틀과 우측 인적사항 입력란 구조를 두 유인물 모두 동일하게 규격화.
+- **요청 사항**: 차시별로 시트를 분리하는 방식 대신 1개의 `원본정보` 시트 A열에 `진도ID`를 넣어 단일 시트로 관리하기를 희망함.
+- **해결 방안**: `setupSheets()` 실행 시 기존 4열 시트가 감지되면 A열에 `진도ID` 컬럼을 자동 추가하고 기존 데이터행에 `'1차시'` 값을 채워 넣는 5열 자동 업그레이드 기능 탑재. 또한 개별 차시 시트(`원본정보-심화1` 등) 형태도 동시 호환되도록 조회 유연성 확보.
 
 ### ✅ 4. 검증 결과 (Verification Results)
-- **Node.js AST 문법 검증**: `index.html` 내 모든 JavaScript 구문 검사 통과 (`Script 0 valid JS syntax`).
-- **인쇄 media print 검증**: `@media print` 10문장 단위 `.page-break` 자동 페이지 분할 동작, 머리글 레이아웃 통일성, A4 가로 양면 출력 레이아웃 정상 동작 확인.
+- **Node.js AST 문법 검증**: `Code.gs` 및 `index.html` 내 모든 JavaScript 구문 검사 통과 (`Code.gs syntax VALID`, `index.html script 0 syntax VALID`).
+- **하위 호환성 검증**: 기존 데이터 손실 없이 `'1차시'`로 자동 매핑되어 이전 제출 및 평가 기록 정상 표시 확인.
 
 ---
 *Built with HTML5, Vanilla JavaScript, TailwindCSS, and Google Apps Script*
