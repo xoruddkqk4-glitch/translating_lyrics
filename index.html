@@ -94,9 +94,13 @@
                 <button id="copyStudentUrlBtn" onclick="copyStudentUrl()" class="teacher-only hidden px-2 py-1 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-bold text-[11px] lg:text-xs shadow transition flex items-center gap-1 cursor-pointer whitespace-nowrap" title="학생들에게 공유할 학생 제출 전용 주소를 복사합니다">
                     <span>📋 학생 주소 복사</span>
                 </button>
-                <!-- Teacher Only: PDF Handout Button -->
-                <button id="pdfHandoutBtn" onclick="openPdfHandoutModal()" class="teacher-only hidden px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-bold text-[11px] lg:text-xs shadow transition flex items-center gap-1 cursor-pointer whitespace-nowrap" title="A4 가로 10문장 단위 번역 학습 유인물 PDF 다운로드 / 인쇄">
-                    <span>📄 유인물 PDF/인쇄</span>
+                <!-- Teacher Only: PDF Pre-Class Handout Button -->
+                <button id="pdfHandoutBtn" onclick="openPdfHandoutModal()" class="teacher-only hidden px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-bold text-[11px] lg:text-xs shadow transition flex items-center gap-1 cursor-pointer whitespace-nowrap" title="A4 가로 10문장 단위 영작 학습 유인물 PDF 다운로드 / 인쇄">
+                    <span>📝 영작용 pdf(수업전)</span>
+                </button>
+                <!-- Teacher Only: PDF Post-Class Handout Button -->
+                <button id="pdfPostHandoutBtn" onclick="openPostClassPdfModal()" class="teacher-only hidden px-2 py-1 bg-teal-600 hover:bg-teal-700 text-white rounded-lg font-bold text-[11px] lg:text-xs shadow transition flex items-center gap-1 cursor-pointer whitespace-nowrap" title="A4 가로 양면 10문장 단위 필사 학습 유인물 PDF 다운로드 / 인쇄">
+                    <span>✍️ 필사용 pdf(수업후)</span>
                 </button>
             </div>
 
@@ -655,7 +659,7 @@
         </div>
     </div>
 
-    <!-- PDF Handout Modal -->
+    <!-- PDF Handout Modal (Pre-Class) -->
     <div id="pdfHandoutModal" class="fixed inset-0 z-[160] bg-slate-950/80 backdrop-blur-md hidden items-center justify-center p-4 md:p-6" onclick="closePdfHandoutModal()">
         <div class="bg-white rounded-3xl p-6 md:p-8 max-w-5xl w-full max-h-[92vh] overflow-y-auto shadow-2xl relative border border-slate-100 flex flex-col justify-between" onclick="event.stopPropagation()">
             <button onclick="closePdfHandoutModal()" class="absolute top-6 right-6 w-10 h-10 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-full flex items-center justify-center font-bold text-xl transition cursor-pointer">
@@ -664,9 +668,9 @@
 
             <div>
                 <div class="flex items-center gap-3 mb-2">
-                    <span class="w-10 h-10 bg-slate-800 text-white font-black text-xl rounded-full flex items-center justify-center shadow-md">📄</span>
+                    <span class="w-10 h-10 bg-slate-800 text-white font-black text-xl rounded-full flex items-center justify-center shadow-md">📝</span>
                     <div>
-                        <h3 class="text-2xl font-extrabold text-slate-800">한영 번역 마스터 유인물 (A4 가로 / 흑백 / 10문장 단위)</h3>
+                        <h3 class="text-2xl font-extrabold text-slate-800">한영 번역 마스터 영작 유인물 (수업전 / A4 가로 / 흑백 / 10문장 단위)</h3>
                         <p class="text-slate-500 text-xs md:text-sm mt-0.5">인쇄 창에서 대상 프린터를 'PDF로 저장'으로 선택하면 PDF 파일로 다운로드됩니다.</p>
                     </div>
                 </div>
@@ -689,6 +693,46 @@
             <div class="mt-4 pt-4 border-t border-slate-100 flex justify-between items-center">
                 <span class="text-xs text-slate-400">💡 [🖨️ PDF 저장 / 인쇄하기] 버튼을 누르면 A4 가로 인쇄 창이 열립니다.</span>
                 <button onclick="closePdfHandoutModal()" class="px-5 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl text-sm transition cursor-pointer">
+                    닫기
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Post-Class PDF Handout Modal -->
+    <div id="pdfPostHandoutModal" class="fixed inset-0 z-[160] bg-slate-950/80 backdrop-blur-md hidden items-center justify-center p-4 md:p-6" onclick="closePostClassPdfModal()">
+        <div class="bg-white rounded-3xl p-6 md:p-8 max-w-5xl w-full max-h-[92vh] overflow-y-auto shadow-2xl relative border border-slate-100 flex flex-col justify-between" onclick="event.stopPropagation()">
+            <button onclick="closePostClassPdfModal()" class="absolute top-6 right-6 w-10 h-10 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-full flex items-center justify-center font-bold text-xl transition cursor-pointer">
+                ✕
+            </button>
+
+            <div>
+                <div class="flex items-center gap-3 mb-2">
+                    <span class="w-10 h-10 bg-teal-800 text-white font-black text-xl rounded-full flex items-center justify-center shadow-md">✍️</span>
+                    <div>
+                        <h3 class="text-2xl font-extrabold text-slate-800">한영 번역 마스터 필사용 유인물 (수업후 / A4 가로 양면 / 흑백 / 10문장 단위)</h3>
+                        <p class="text-slate-500 text-xs md:text-sm mt-0.5">인쇄 창에서 대상 프린터를 'PDF로 저장'으로 선택하고, '양면 인쇄(짧은쪽 거침 / Short-edge)' 옵션을 권장합니다.</p>
+                    </div>
+                </div>
+
+                <div class="my-4 flex flex-wrap justify-between items-center bg-teal-50 p-4 rounded-2xl border border-teal-200 gap-3">
+                    <div class="text-xs text-slate-800 font-medium">
+                        📌 <strong>A4 가로 양면 흑백 규격</strong> | 앞면: 우리말 + 영어 따라쓰기(회색점선) + 안보고 쓰기 | 뒷면: 우리말 + 안보고 쓰기 + Things to Remember | <strong>10문장 단위</strong>
+                    </div>
+                    <button onclick="printPostClassHandoutPdf()" class="px-6 py-2.5 bg-teal-900 hover:bg-black text-white font-bold rounded-xl shadow-lg transition flex items-center gap-2 cursor-pointer text-sm">
+                        <span>🖨️ PDF 저장 / 인쇄하기</span>
+                    </button>
+                </div>
+
+                <!-- Handout Preview Container -->
+                <div id="pdfPostHandoutPreview" class="border border-slate-200 rounded-2xl p-4 bg-slate-100 max-h-[55vh] overflow-y-auto space-y-6">
+                    <!-- Live Preview Pages -->
+                </div>
+            </div>
+
+            <div class="mt-4 pt-4 border-t border-slate-100 flex justify-between items-center">
+                <span class="text-xs text-slate-400">💡 [🖨️ PDF 저장 / 인쇄하기] 버튼을 누르면 A4 가로 양면 인쇄 창이 열립니다.</span>
+                <button onclick="closePostClassPdfModal()" class="px-5 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl text-sm transition cursor-pointer">
                     닫기
                 </button>
             </div>
@@ -835,6 +879,7 @@
             const mobileMenu = document.getElementById('mobileMenu');
             const copyBtn = document.getElementById('copyStudentUrlBtn');
             const pdfBtn = document.getElementById('pdfHandoutBtn');
+            const pdfPostBtn = document.getElementById('pdfPostHandoutBtn');
             const headerTitle = document.getElementById('headerTitle');
 
             if (isStudentMode) {
@@ -844,6 +889,7 @@
                 if (mobileMenu) { mobileMenu.classList.add('hidden'); mobileMenu.style.setProperty('display', 'none', 'important'); }
                 if (copyBtn) { copyBtn.classList.add('hidden'); copyBtn.style.setProperty('display', 'none', 'important'); }
                 if (pdfBtn) { pdfBtn.classList.add('hidden'); pdfBtn.style.setProperty('display', 'none', 'important'); }
+                if (pdfPostBtn) { pdfPostBtn.classList.add('hidden'); pdfPostBtn.style.setProperty('display', 'none', 'important'); }
                 if (headerTitle) headerTitle.innerText = '🎤 한영 번역 마스터';
             } else {
                 if (studentNav) { studentNav.classList.add('hidden'); studentNav.style.setProperty('display', 'none', 'important'); }
@@ -851,6 +897,7 @@
                 if (mobileBtn) { mobileBtn.classList.remove('hidden'); mobileBtn.style.removeProperty('display'); }
                 if (copyBtn) { copyBtn.classList.remove('hidden'); copyBtn.style.setProperty('display', 'inline-flex', 'important'); }
                 if (pdfBtn) { pdfBtn.classList.remove('hidden'); pdfBtn.style.setProperty('display', 'inline-flex', 'important'); }
+                if (pdfPostBtn) { pdfPostBtn.classList.remove('hidden'); pdfPostBtn.style.setProperty('display', 'inline-flex', 'important'); }
                 if (headerTitle) headerTitle.innerText = '🎤 한영 번역 마스터 (교사용)';
             }
         }
@@ -2412,8 +2459,9 @@
 
                 pageEl.innerHTML = `
                     <div class="flex justify-between items-center mb-3 pb-2 border-b border-black">
-                        <span class="font-extrabold text-base text-black">🎤 한영 번역 마스터 유인물</span>
+                        <span class="font-extrabold text-base text-black">🎤 한영 번역 마스터 유인물(영작용)</span>
                         <div class="text-xs font-semibold text-black flex gap-3">
+                            <span>날짜: ________</span>
                             <span>학년: ____</span>
                             <span>반: ____</span>
                             <span>모둠: ____</span>
@@ -2469,9 +2517,9 @@
                     <div class="page-container ${isLastPage ? '' : 'page-break'}">
                         <table class="header-table">
                             <tr>
-                                <td class="header-title">🎤 한영 번역 마스터 유인물</td>
+                                <td class="header-title">🎤 한영 번역 마스터 유인물(영작용)</td>
                                 <td class="header-info">
-                                    <span class="info-box">학년: _____ &nbsp; 반: _____ &nbsp; 모둠: _____ &nbsp; 역할: _____ &nbsp; 이름: ____________</span>
+                                    <span class="info-box">날짜: ________ &nbsp; 학년: _____ &nbsp; 반: _____ &nbsp; 모둠: _____ &nbsp; 역할: _____ &nbsp; 이름: ____________</span>
                                     &nbsp; <span style="font-weight: 800; color: #000000;">[ ${pageIdx + 1} / ${totalPages} Page ]</span>
                                 </td>
                             </tr>
@@ -2500,7 +2548,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>한영 번역 마스터 유인물 (A4 가로 흑백)</title>
+<title>한영 번역 마스터 유인물(영작용)</title>
 <style>
     @page {
         size: A4 landscape;
@@ -2583,6 +2631,367 @@
                 return;
             }
             const htmlContent = generateHandoutFullHtml();
+            printWindow.document.write(htmlContent);
+            printWindow.document.close();
+            printWindow.focus();
+            setTimeout(() => {
+                printWindow.print();
+            }, 400);
+        }
+
+        // --- Post-Class PDF Handout Generator & Modal ---
+        let currentPostClassHandoutData = [];
+
+        function openPostClassPdfModal() {
+            showLoading(true);
+            if (isGoogleEnv) {
+                google.script.run
+                    .withSuccessHandler(data => {
+                        showLoading(false);
+                        currentPostClassHandoutData = data || [];
+                        renderPostClassHandoutPreview();
+                        const modal = document.getElementById('pdfPostHandoutModal');
+                        modal.classList.remove('hidden');
+                        modal.classList.add('flex');
+                        document.body.style.overflow = 'hidden';
+                    })
+                    .withFailureHandler(handleGlobalError)
+                    .getLyricsData();
+            } else {
+                setTimeout(() => {
+                    showLoading(false);
+                    currentPostClassHandoutData = [
+                        { seq: 1, role: 'A', korean: '나는 그저 가난한 소년일 뿐입니다.', lyric: 'I am just a poor boy.' },
+                        { seq: 2, role: 'B', korean: '내 이야기는 거의 전해지지 않지만,', lyric: 'And my story is seldom told.' },
+                        { seq: 3, role: 'C', korean: '나는 내 저항력을 탕진했습니다.', lyric: 'I have squandered my resistance.' },
+                        { seq: 4, role: 'D', korean: '중얼거림 한 주머니를 위해.', lyric: 'For a pocketful of mumbles.' },
+                        { seq: 5, role: 'A', korean: '그런 것들이 약속입니다.', lyric: 'Such are promises.' },
+                        { seq: 6, role: 'B', korean: '모두 거짓과 농담일 뿐,', lyric: 'All lies and jest.' },
+                        { seq: 7, role: 'C', korean: '여전히 사람은 들으려는 것만 듣고,', lyric: 'Still a man hears what he wants to hear.' },
+                        { seq: 8, role: 'D', korean: '나머지는 무시합니다.', lyric: 'And disregards the rest.' },
+                        { seq: 9, role: 'A', korean: '그가 그의 동네를 떠났을 때,', lyric: 'When I left my home and my family.' },
+                        { seq: 10, role: 'B', korean: '그는 소년일 뿐이었습니다.', lyric: 'I was no more than a boy.' },
+                        { seq: 11, role: 'C', korean: '낯선 사람들의 고요함 속에서,', lyric: 'In the company of strangers.' },
+                        { seq: 12, role: 'D', korean: '기차역을 따라 달아났습니다.', lyric: 'In the quiet of a railway station.' }
+                    ];
+                    renderPostClassHandoutPreview();
+                    const modal = document.getElementById('pdfPostHandoutModal');
+                    modal.classList.remove('hidden');
+                    modal.classList.add('flex');
+                    document.body.style.overflow = 'hidden';
+                }, 400);
+            }
+        }
+
+        function closePostClassPdfModal() {
+            const modal = document.getElementById('pdfPostHandoutModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            document.body.style.overflow = 'auto';
+        }
+
+        function renderPostClassHandoutPreview() {
+            const container = document.getElementById('pdfPostHandoutPreview');
+            if (!container) return;
+            container.innerHTML = '';
+
+            if (!currentPostClassHandoutData || currentPostClassHandoutData.length === 0) {
+                container.innerHTML = '<p class="text-center text-slate-500 py-8 bg-white rounded-xl">필사 유인물로 생성할 원본정보 데이터가 없습니다.</p>';
+                return;
+            }
+
+            const pageSize = 10;
+            const totalSheets = Math.ceil(currentPostClassHandoutData.length / pageSize);
+            const totalPages = totalSheets * 2;
+
+            for (let sheetIdx = 0; sheetIdx < totalSheets; sheetIdx++) {
+                const pageItems = currentPostClassHandoutData.slice(sheetIdx * pageSize, (sheetIdx + 1) * pageSize);
+                
+                // Front Page Element
+                const frontPageEl = document.createElement('div');
+                frontPageEl.className = "bg-white p-6 rounded-2xl shadow-sm border border-slate-300 mb-6";
+
+                let frontRowsHtml = '';
+                pageItems.forEach(item => {
+                    const engText = item.lyric || item.english || '';
+                    frontRowsHtml += `
+                        <tr style="height: 50px;">
+                            <td class="text-center font-bold text-black" style="border: 1px solid #000000; padding: 6px;">${item.seq}</td>
+                            <td class="text-center font-bold text-black" style="border: 1px solid #000000; padding: 6px;">${escapeHtml(item.role)}</td>
+                            <td style="border: 1px solid #000000; padding: 6px 8px; font-weight: 600; color: #000000; line-height: 1.35; font-size: 12px; word-break: break-word;">${escapeHtml(item.korean)}</td>
+                            <td style="border: 1px solid #000000; padding: 6px 8px; font-weight: 700; color: #ffffff; -webkit-text-stroke: 0.8px #888888; line-height: 1.35; font-size: 13px; word-break: break-word; background-color: #ffffff;">${escapeHtml(engText)}</td>
+                            <td style="border: 1px solid #000000; background-color: #ffffff;"></td>
+                        </tr>
+                    `;
+                });
+
+                frontPageEl.innerHTML = `
+                    <div class="flex justify-between items-center mb-3 pb-2 border-b border-black">
+                        <span class="font-extrabold text-base text-black">🎤 한영 번역 마스터 유인물 (필사용 - 앞면)</span>
+                        <div class="text-xs font-semibold text-black flex gap-3">
+                            <span>날짜: ________</span>
+                            <span>학년: ____</span>
+                            <span>반: ____</span>
+                            <span>모둠: ____</span>
+                            <span>역할: ____</span>
+                            <span>이름: ________</span>
+                            <span class="px-2 py-0.5 border border-black rounded text-black font-bold">Sheet ${sheetIdx + 1} 앞면 (${sheetIdx * 2 + 1} / ${totalPages} Page)</span>
+                        </div>
+                    </div>
+                    <table class="w-full text-xs text-left border-collapse" style="table-layout: fixed;">
+                        <thead>
+                            <tr class="bg-white text-black font-bold">
+                                <th style="width: 6%; padding: 8px; border: 1.5px solid #000000; text-align: center;">순번</th>
+                                <th style="width: 6%; padding: 8px; border: 1.5px solid #000000; text-align: center;">역할</th>
+                                <th style="width: 20%; padding: 8px; border: 1.5px solid #000000; text-align: center;">우리말 문장</th>
+                                <th style="width: 34%; padding: 8px; border: 1.5px solid #000000; text-align: center;">영어 문장위에 쓰기</th>
+                                <th style="width: 34%; padding: 8px; border: 1.5px solid #000000; text-align: center;">최대한 안보고 쓰기</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${frontRowsHtml}
+                        </tbody>
+                    </table>
+                `;
+                container.appendChild(frontPageEl);
+
+                // Back Page Element
+                const backPageEl = document.createElement('div');
+                backPageEl.className = "bg-white p-6 rounded-2xl shadow-sm border border-slate-300 mb-6";
+
+                let backRowsHtml = '';
+                pageItems.forEach(item => {
+                    backRowsHtml += `
+                        <tr style="height: 50px;">
+                            <td class="text-center font-bold text-black" style="border: 1px solid #000000; padding: 6px;">${item.seq}</td>
+                            <td class="text-center font-bold text-black" style="border: 1px solid #000000; padding: 6px;">${escapeHtml(item.role)}</td>
+                            <td style="border: 1px solid #000000; padding: 6px 8px; font-weight: 600; color: #000000; line-height: 1.35; font-size: 12px; word-break: break-word;">${escapeHtml(item.korean)}</td>
+                            <td style="border: 1px solid #000000; background-color: #ffffff;"></td>
+                            <td style="border: 1px solid #000000; background-color: #ffffff;"></td>
+                        </tr>
+                    `;
+                });
+
+                backPageEl.innerHTML = `
+                    <div class="flex justify-between items-center mb-3 pb-2 border-b border-black">
+                        <span class="font-extrabold text-base text-black">🎤 한영 번역 마스터 유인물 (필사용 - 뒷면)</span>
+                        <div class="text-xs font-semibold text-black flex gap-3">
+                            <span>날짜: ________</span>
+                            <span>학년: ____</span>
+                            <span>반: ____</span>
+                            <span>모둠: ____</span>
+                            <span>역할: ____</span>
+                            <span>이름: ________</span>
+                            <span class="px-2 py-0.5 border border-black rounded text-black font-bold">Sheet ${sheetIdx + 1} 뒷면 (${sheetIdx * 2 + 2} / ${totalPages} Page)</span>
+                        </div>
+                    </div>
+                    <table class="w-full text-xs text-left border-collapse" style="table-layout: fixed;">
+                        <thead>
+                            <tr class="bg-white text-black font-bold">
+                                <th style="width: 6%; padding: 8px; border: 1.5px solid #000000; text-align: center;">순번</th>
+                                <th style="width: 6%; padding: 8px; border: 1.5px solid #000000; text-align: center;">역할</th>
+                                <th style="width: 23%; padding: 8px; border: 1.5px solid #000000; text-align: center;">우리말 문장</th>
+                                <th style="width: 32.5%; padding: 8px; border: 1.5px solid #000000; text-align: center;">진짜 안보고 쓰기</th>
+                                <th style="width: 32.5%; padding: 8px; border: 1.5px solid #000000; text-align: center;">Things to Remember</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${backRowsHtml}
+                        </tbody>
+                    </table>
+                `;
+                container.appendChild(backPageEl);
+            }
+        }
+
+        function generatePostClassHandoutFullHtml() {
+            if (!currentPostClassHandoutData || currentPostClassHandoutData.length === 0) return '';
+            const pageSize = 10;
+            const totalSheets = Math.ceil(currentPostClassHandoutData.length / pageSize);
+            const totalPages = totalSheets * 2;
+
+            let pagesHtml = '';
+
+            for (let sheetIdx = 0; sheetIdx < totalSheets; sheetIdx++) {
+                const pageItems = currentPostClassHandoutData.slice(sheetIdx * pageSize, (sheetIdx + 1) * pageSize);
+                
+                // Front Page HTML
+                let frontRowsHtml = '';
+                pageItems.forEach(item => {
+                    const engText = item.lyric || item.english || '';
+                    frontRowsHtml += `
+                        <tr style="height: 52px;">
+                            <td style="border: 1px solid #000000; padding: 6px; text-align: center; font-weight: 800; color: #000000;">${item.seq}</td>
+                            <td style="border: 1px solid #000000; padding: 6px; text-align: center; font-weight: 700; color: #000000;">${escapeHtml(item.role)}</td>
+                            <td style="border: 1px solid #000000; padding: 6px 8px; font-weight: 600; color: #000000; line-height: 1.35; font-size: 12px; word-break: break-word;">${escapeHtml(item.korean)}</td>
+                            <td style="border: 1px solid #000000; padding: 6px 8px; font-weight: 700; color: #ffffff; -webkit-text-stroke: 0.8px #888888; line-height: 1.35; font-size: 13px; word-break: break-word; background-color: #ffffff;">${escapeHtml(engText)}</td>
+                            <td style="border: 1px solid #000000; background-color: #ffffff;"></td>
+                        </tr>
+                    `;
+                });
+
+                pagesHtml += `
+                    <div class="page-container page-break">
+                        <table class="header-table">
+                            <tr>
+                                <td class="header-title">🎤 한영 번역 마스터 유인물 (필사용 - 앞면)</td>
+                                <td class="header-info">
+                                    <span class="info-box">날짜: ________ &nbsp; 학년: _____ &nbsp; 반: _____ &nbsp; 모둠: _____ &nbsp; 역할: _____ &nbsp; 이름: ____________</span>
+                                    &nbsp; <span style="font-weight: 800; color: #000000;">[ ${sheetIdx * 2 + 1} / ${totalPages} Page ]</span>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <table class="handout-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 6%;">순번</th>
+                                    <th style="width: 6%;">역할</th>
+                                    <th style="width: 20%;">우리말 문장</th>
+                                    <th style="width: 34%;">영어 문장위에 쓰기</th>
+                                    <th style="width: 34%;">최대한 안보고 쓰기</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${frontRowsHtml}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+
+                // Back Page HTML
+                let backRowsHtml = '';
+                pageItems.forEach(item => {
+                    backRowsHtml += `
+                        <tr style="height: 52px;">
+                            <td style="border: 1px solid #000000; padding: 6px; text-align: center; font-weight: 800; color: #000000;">${item.seq}</td>
+                            <td style="border: 1px solid #000000; padding: 6px; text-align: center; font-weight: 700; color: #000000;">${escapeHtml(item.role)}</td>
+                            <td style="border: 1px solid #000000; padding: 6px 8px; font-weight: 600; color: #000000; line-height: 1.35; font-size: 12px; word-break: break-word;">${escapeHtml(item.korean)}</td>
+                            <td style="border: 1px solid #000000; background-color: #ffffff;"></td>
+                            <td style="border: 1px solid #000000; background-color: #ffffff;"></td>
+                        </tr>
+                    `;
+                });
+
+                const isLastPage = (sheetIdx === totalSheets - 1);
+                pagesHtml += `
+                    <div class="page-container ${isLastPage ? '' : 'page-break'}">
+                        <table class="header-table">
+                            <tr>
+                                <td class="header-title">🎤 한영 번역 마스터 유인물 (필사용 - 뒷면)</td>
+                                <td class="header-info">
+                                    <span class="info-box">날짜: ________ &nbsp; 학년: _____ &nbsp; 반: _____ &nbsp; 모둠: _____ &nbsp; 역할: _____ &nbsp; 이름: ____________</span>
+                                    &nbsp; <span style="font-weight: 800; color: #000000;">[ ${sheetIdx * 2 + 2} / ${totalPages} Page ]</span>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <table class="handout-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 6%;">순번</th>
+                                    <th style="width: 6%;">역할</th>
+                                    <th style="width: 23%;">우리말 문장</th>
+                                    <th style="width: 32.5%;">진짜 안보고 쓰기</th>
+                                    <th style="width: 32.5%;">Things to Remember</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${backRowsHtml}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+
+            return `
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>한영 번역 마스터 필사용 유인물 (A4 가로 양면 흑백)</title>
+<style>
+    @page {
+        size: A4 landscape;
+        margin: 10mm 12mm 10mm 12mm;
+    }
+    @media print {
+        body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .page-break { page-break-after: always; break-after: page; }
+    }
+    body {
+        font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+        color: #000000;
+        margin: 0;
+        padding: 0;
+        background: #ffffff;
+    }
+    .page-container {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 4px 0;
+    }
+    .header-table {
+        width: 100%;
+        margin-bottom: 10px;
+        border-collapse: collapse;
+    }
+    .header-title {
+        font-size: 19px;
+        font-weight: 800;
+        color: #000000;
+    }
+    .header-info {
+        text-align: right;
+        font-size: 12px;
+        font-weight: 600;
+        color: #000000;
+    }
+    .info-box {
+        display: inline-block;
+        border: 1px solid #000000;
+        padding: 4px 10px;
+        border-radius: 4px;
+        background: #ffffff;
+    }
+    .handout-table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+    }
+    .handout-table th {
+        background-color: #ffffff;
+        color: #000000;
+        font-size: 13px;
+        font-weight: 700;
+        padding: 8px 6px;
+        border: 1.5px solid #000000;
+        text-align: center;
+    }
+    .handout-table td {
+        border: 1px solid #000000;
+        padding: 6px;
+        font-size: 12px;
+        vertical-align: middle;
+        word-break: break-word;
+        background-color: #ffffff;
+    }
+</style>
+</head>
+<body>
+    ${pagesHtml}
+</body>
+</html>
+            `;
+        }
+
+        function printPostClassHandoutPdf() {
+            const printWindow = window.open('', '_blank', 'width=1100,height=800');
+            if (!printWindow) {
+                alert('팝업 차단이 설정되어 있습니다. 팝업 차단을 해제해 주세요.');
+                return;
+            }
+            const htmlContent = generatePostClassHandoutFullHtml();
             printWindow.document.write(htmlContent);
             printWindow.document.close();
             printWindow.focus();
