@@ -661,6 +661,7 @@ function callChatGPT(apiKey, systemPrompt, userPrompt) {
       { role: 'system', content: systemPrompt },
       { role: 'user', content: userPrompt }
     ],
+    response_format: { type: "json_object" },
     temperature: 0.3
   };
   const options = {
@@ -748,26 +749,33 @@ function callClaude(apiKey, systemPrompt, userPrompt) {
 }
 
 function parseAiResponseJson(rawText) {
-  if (!rawText) return { grammar: '', vocabulary: '', expression: '', overall: '' };
+  if (!rawText) return { grammar: '-', vocabulary: '-', expression: '-', overall: '-' };
 
   let clean = rawText.trim();
   
-  // 1. 마크다운 코드블록 제거 (```json ... ``` 또는 ``` ... ```)
-  if (clean.startsWith('```')) {
-    clean = clean.replace(/^```(json)?/i, '').replace(/```$/i, '').trim();
+  // 1. JSON 문자열 영역 추출 (마크다운 코드블록 또는 { ... } 영역 캡처)
+  const jsonBlockMatch = clean.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+  if (jsonBlockMatch) {
+    clean = jsonBlockMatch[1].trim();
+  } else {
+    const firstBrace = clean.indexOf('{');
+    const lastBrace = clean.lastIndexOf('}');
+    if (firstBrace !== -1 && lastBrace > firstBrace) {
+      clean = clean.substring(firstBrace, lastBrace + 1).trim();
+    }
   }
-  clean = clean.replace(/```$/g, '').trim();
 
-  // 2. 이중 따옴표("" -> ") 변환 처리
+  // 이중 따옴표("" -> ") 변환 처리
   if (clean.includes('""')) {
     clean = clean.replace(/""/g, '"');
   }
 
-  // 3. 표준 JSON.parse 시도
+  let obj = null;
+
+  // 2. JSON 파싱 시도
   try {
-    return JSON.parse(clean);
+    obj = JSON.parse(clean);
   } catch (e1) {
-    // 4. JSON 문자열 내부의 실제 개행문자(\n)로 인한 SyntaxError 자동 보정
     try {
       let fixedJson = clean.replace(/\r?\n/g, function(match, offset, string) {
         let quotes = 0;
@@ -778,15 +786,15 @@ function parseAiResponseJson(rawText) {
         }
         return (quotes % 2 === 1) ? '\\n' : match;
       });
-      return JSON.parse(fixedJson);
+      obj = JSON.parse(fixedJson);
     } catch (e2) {
-      // 5. 정규표현식을 이용한 정교한 필드 추출 Fallback
+      // 정규표현식 Fallback
       let grammar = '', vocabulary = '', expression = '', overall = '';
       
-      const gMatch = clean.match(/"grammar"\s*:\s*"([\s\S]*?)"\s*,\s*"vocabulary"/i);
-      const vMatch = clean.match(/"vocabulary"\s*:\s*"([\s\S]*?)"\s*,\s*"expression"/i);
-      const eMatch = clean.match(/"expression"\s*:\s*"([\s\S]*?)"\s*,\s*"overall"/i);
-      const oMatch = clean.match(/"overall"\s*:\s*"([\s\S]*?)"\s*\}?$/i);
+      const gMatch = clean.match(/"(?:grammar|grammarFeedback|Grammar)"\s*:\s*"([\s\S]*?)"\s*,\s*"/i);
+      const vMatch = clean.match(/"(?:vocabulary|vocabFeedback|Vocabulary)"\s*:\s*"([\s\S]*?)"\s*,\s*"/i);
+      const eMatch = clean.match(/"(?:expression|exprFeedback|Expression)"\s*:\s*"([\s\S]*?)"\s*,\s*"/i);
+      const oMatch = clean.match(/"(?:overall|paraphrase|Overall)"\s*:\s*"([\s\S]*?)"\s*\}?$/i);
 
       if (gMatch) grammar = gMatch[1].replace(/\\n/g, '\n').trim();
       if (vMatch) vocabulary = vMatch[1].replace(/\\n/g, '\n').trim();
@@ -794,22 +802,45 @@ function parseAiResponseJson(rawText) {
       if (oMatch) overall = oMatch[1].replace(/\\n/g, '\n').trim();
 
       if (grammar || vocabulary || expression || overall) {
-        return {
-          grammar: grammar || '-',
-          vocabulary: vocabulary || '-',
-          expression: expression || '-',
-          overall: overall || clean
-        };
+        obj = { grammar, vocabulary, expression, overall };
       }
-
-      return {
-        grammar: "피드백을 정상 파싱하지 못했습니다.",
-        vocabulary: "원문: " + rawText,
-        expression: "",
-        overall: clean
-      };
     }
   }
+
+  // 3. 키 이름 대소문자 및 변형 유연 처리
+  if (obj && typeof obj === 'object') {
+    const getKey = (...keys) => {
+      for (let k of keys) {
+        if (obj[k] !== undefined && obj[k] !== null && String(obj[k]).trim() !== '') {
+          return String(obj[k]).trim();
+        }
+      }
+      // 대소문자 구분 없는 검색
+      const lowerObj = {};
+      Object.keys(obj).forEach(key => { lowerObj[key.toLowerCase()] = obj[key]; });
+      for (let k of keys) {
+        const lk = k.toLowerCase();
+        if (lowerObj[lk] !== undefined && lowerObj[lk] !== null && String(lowerObj[lk]).trim() !== '') {
+          return String(lowerObj[lk]).trim();
+        }
+      }
+      return '';
+    };
+
+    return {
+      grammar: getKey('grammar', 'Grammar', 'grammarFeedback', 'grammar_feedback', '문법') || '-',
+      vocabulary: getKey('vocabulary', 'Vocabulary', 'vocabFeedback', 'vocabulary_feedback', '어휘') || '-',
+      expression: getKey('expression', 'Expression', 'exprFeedback', 'expression_feedback', '표현') || '-',
+      overall: getKey('overall', 'Overall', 'paraphrase', 'Paraphrase', 'paraphrasing', 'overallFeedback') || rawText
+    };
+  }
+
+  return {
+    grammar: "피드백 파싱 오류 (형식이 맞지 않음)",
+    vocabulary: "-",
+    expression: "-",
+    overall: rawText
+  };
 }
 
 function getAiFeedbackData(classNum) {
