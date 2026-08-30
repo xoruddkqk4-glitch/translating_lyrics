@@ -2197,7 +2197,7 @@
                         grammar: '문법적 오류 없이 주어와 보어의 관계가 명확합니다.',
                         vocabulary: 'poor boy라는 표현이 가사 원문의 어감을 잘 전달합니다.',
                         expression: '자연스러운 원문 뉘앙스를 잘 살린 우수한 번역입니다.',
-                        overall: '훌륭한 번역입니다! 의미 왜곡 없이 매끄럽게 작성되었습니다.',
+                        overall: '1. [주어 변경] A poor boy is all that I am. (사물/보어를 강조하는 수동 및 보어 주어 전환)\n2. [부정어 포함] I do not possess anything other than poverty. (부정어 do not을 활용한 강조 표현)\n3. [부정어 미포함] I remain simply a penniless boy. (부정어 없이 긍정 구문으로 상태 표현)',
                         provider: 'ChatGPT (gpt-4o)'
                     }
                 ]), 500);
@@ -2263,8 +2263,8 @@
                     </div>
 
                     <div class="p-4 bg-gradient-to-r from-indigo-50/80 to-blue-50/80 rounded-xl border border-indigo-100">
-                        <p class="text-xs font-bold text-indigo-800 flex items-center gap-1 mb-1">🌟 종합 피드백 (Overall)</p>
-                        <p class="text-sm text-slate-800 leading-relaxed font-semibold">${escapeHtml(item.overall || '-')}</p>
+                        <p class="text-xs font-bold text-indigo-800 flex items-center gap-1 mb-1">🌟 Paraphrase 제안 (Paraphrasing)</p>
+                        <p class="text-sm text-slate-800 leading-relaxed font-semibold whitespace-pre-line">${escapeHtml(item.overall || '-')}</p>
                     </div>
                 `;
                 container.appendChild(card);
@@ -2320,7 +2320,7 @@
                             grammar: '주어-동사의 형태가 바르게 작성되었습니다.',
                             vocabulary: 'poor boy 단어가 잘 매칭되었습니다.',
                             expression: '문장이 매우 자연스럽고 구어체적입니다.',
-                            overall: '원문의 뉘앙스를 아주 잘 표현해낸 뛰어난 번역입니다.',
+                            overall: '1. [주어 변경] A poor boy is all that I am. (보어 강조 전환)\n2. [부정어 포함] I do not possess anything other than poverty. (do not 부정 구문 활용)\n3. [부정어 미포함] I remain simply a penniless boy. (긍정 어휘 재진술)',
                             provider: engine === 'claude' ? 'Claude (claude-3-5-sonnet)' : 'ChatGPT (gpt-4o)'
                         }
                     ]);

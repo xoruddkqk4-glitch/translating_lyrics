@@ -131,10 +131,10 @@ function setupSheets() {
   let aiSheet = ss.getSheetByName(SHEET_NAMES.AI_FEEDBACK);
   if (!aiSheet) {
     aiSheet = ss.insertSheet(SHEET_NAMES.AI_FEEDBACK);
-    aiSheet.appendRow(['타임스탬프', '반', '모둠', '역할', '순번', '우리말 원문', '학생 영문 번역', '문법 피드백', '어휘 피드백', '표현 피드백', '종합 피드백', '제공 AI']);
+    aiSheet.appendRow(['타임스탬프', '반', '모둠', '역할', '순번', '우리말 원문', '학생 영문 번역', '문법 피드백', '어휘 피드백', '표현 피드백', 'Paraphrase 제안', '제공 AI']);
     aiSheet.getRange("A1:L1").setFontWeight("bold");
   } else {
-    aiSheet.getRange(1, 1, 1, 12).setValues([['타임스탬프', '반', '모둠', '역할', '순번', '우리말 원문', '학생 영문 번역', '문법 피드백', '어휘 피드백', '표현 피드백', '종합 피드백', '제공 AI']]);
+    aiSheet.getRange(1, 1, 1, 12).setValues([['타임스탬프', '반', '모둠', '역할', '순번', '우리말 원문', '학생 영문 번역', '문법 피드백', '어휘 피드백', '표현 피드백', 'Paraphrase 제안', '제공 AI']]);
     aiSheet.getRange("A1:L1").setFontWeight("bold");
   }
 
@@ -843,17 +843,28 @@ function generateAiFeedback(classNum, provider) {
     aiSheet = ss.getSheetByName(SHEET_NAMES.AI_FEEDBACK);
   }
 
-  const systemPrompt = `당신은 친절하고 전문적인 중·고등학교 영어 선생님이자 번역 평가 전문가입니다.
-학생들이 우리말 문장을 보고 영어 문장으로 번역한 결과물을 평가합니다.
+  const systemPrompt = `당신은 친절하고 전문적인 중·고등학교 영어 선생님이자 번역 및 Paraphrasing 평가 전문가입니다.
+학생들이 우리말 문장을 보고 영어 문장으로 번역한 결과물을 분석하고 피드백을 제공합니다.
+
+[핵심 평가 지침]
+1. 잘못된 지식 수정: 학생 번역에서 발생한 문법적, 어휘적 오류를 정확히 파악하여 올바르게 고쳐줍니다.
+2. 모르는 정보 제공: 학생이 알지 못했던 유용한 어휘, 구문, 시제/수동태/물주구문 등 다채로운 표현 정보를 제공합니다.
+3. Paraphrasing 능력 향상: 학생이 표현력을 다각도로 넓힐 수 있도록 Paraphrasing 기법을 지도합니다.
 
 [작성 규칙]
-1. 모든 피드백 내용(문법, 어휘, 표현, 종합)은 반드시 100% 한글(한국어)로만 다정하고 알기 쉽게 작성해야 합니다. 영어나 영문 용어를 그대로 나열하지 마세요.
-2. 반드시 아래 JSON 구조로만 응답하세요. 다른 설명이나 텍스트는 절대 금지합니다.
+1. 문법(grammar), 어휘(vocabulary), 표현(expression) 피드백은 반드시 100% 한글(한국어)로 다정하고 알기 쉽게 1-2문장으로 작성하세요.
+2. "overall" 필드에는 학생 번역을 바탕으로 한 Paraphrase 문장을 최대 3개까지 작성하여 하나의 텍스트(줄바꿈으로 구분)로 제공하세요.
+   Paraphrase 3가지 문장 구성 조건:
+   - 1) [주어 변경 문장]: 주어를 변경하여 태(수동태/능동태) 변화, 물주구문(사물주어) 등 다양한 구문을 활용한 문장
+   - 2) [부정어 포함 문장]: 부정 표현(do not V, cannot help -ing, never 등)을 활용한 문장
+   - 3) [부정어 미포함 문장]: 긍정 및 유의 표현(like, keep from -ing, prevent from -ing 등)을 활용한 문장
+   (각 문장은 영문과 함께 어떤 구문 구조가 적용되었는지 간단한 한글 부연 설명을 괄호 안에 첨부해 주세요.)
+3. 반드시 아래 JSON 구조로만 응답하세요. 다른 설명이나 텍스트는 절대 금지합니다.
 {
-  "grammar": "문법적 정확성 및 성수/시제 일치에 대한 한글 피드백 1-2문장",
-  "vocabulary": "단어 선택의 적절성 및 어휘 표현에 대한 한글 피드백 1-2문장",
+  "grammar": "잘못된 문법 교정 및 성수/시제 일치에 대한 한글 피드백 1-2문장",
+  "vocabulary": "어휘 선택의 적절성 및 어휘 교정/추천에 대한 한글 피드백 1-2문장",
   "expression": "표현의 자연스러움 및 구문 활용에 대한 한글 피드백 1-2문장",
-  "overall": "학생의 노력을 칭찬하고 개선 방향을 조언하는 한글 종합 총평 1-2문장"
+  "overall": "1. [주어 변경] (Paraphrase 영문) (구문 설명)\n2. [부정어 포함] (Paraphrase 영문) (구문 설명)\n3. [부정어 미포함] (Paraphrase 영문) (구문 설명)"
 }`;
 
   const timestamp = new Date();
@@ -871,7 +882,7 @@ function generateAiFeedback(classNum, provider) {
       let exprFeedback = r[9] ? r[9].toString().trim() : '';
       let overallFeedback = r[10] ? r[10].toString().trim() : '';
 
-      // 피드백 셀(문법, 어휘, 표현, 종합)이 하나라도 비어있지 않고 기록되어 있는지 검사
+      // 피드백 셀(문법, 어휘, 표현, Paraphrase)이 하나라도 비어있지 않고 기록되어 있는지 검사
       let hasFeedback = Boolean(grammarFeedback || vocabFeedback || exprFeedback || overallFeedback);
 
       if (e_class == classNum) {
@@ -896,7 +907,9 @@ function generateAiFeedback(classNum, provider) {
     const userPrompt = `- 우리말 원문: "${koreanText}"
 - 학생 영어 번역: "${target.translation}"
 
-위 학생의 번역에 대해 문법(grammar), 어휘(vocabulary), 표현(expression), 종합(overall) 피드백을 친절한 한글로 작성해 주세요.`;
+위 학생의 번역을 바탕으로:
+1) 잘못된 정보 교정 및 문법(grammar), 어휘(vocabulary), 표현(expression) 피드백을 한글로 작성해 주세요.
+2) 주어 변경 문장, 부정어 포함 문장, 부정어 미포함 문장의 3가지 Paraphrase 제안 문장을 생성하여 "overall" 항목에 줄바꿈으로 구분하여 제공해 주세요.`;
 
     let rawResponse = '';
     if (provider === 'claude') {
