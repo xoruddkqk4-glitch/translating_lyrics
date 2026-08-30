@@ -131,10 +131,10 @@ function setupSheets() {
   let aiSheet = ss.getSheetByName(SHEET_NAMES.AI_FEEDBACK);
   if (!aiSheet) {
     aiSheet = ss.insertSheet(SHEET_NAMES.AI_FEEDBACK);
-    aiSheet.appendRow(['타임스탬프', '반', '모둠', '역할', '순번', '우리말 원문', '학생 영문 번역', '문법 피드백', '어휘 피드백', '표현 피드백', 'Paraphrase 제안', '제공 AI']);
+    aiSheet.appendRow(['타임스탬프', '반', '모둠', '역할', '순번', '우리말 원문', '학생 영문 번역', '문법 피드백', '어휘 피드백', '표현 피드백', 'Paraphrase 피드백', '제공 AI']);
     aiSheet.getRange("A1:L1").setFontWeight("bold");
   } else {
-    aiSheet.getRange(1, 1, 1, 12).setValues([['타임스탬프', '반', '모둠', '역할', '순번', '우리말 원문', '학생 영문 번역', '문법 피드백', '어휘 피드백', '표현 피드백', 'Paraphrase 제안', '제공 AI']]);
+    aiSheet.getRange(1, 1, 1, 12).setValues([['타임스탬프', '반', '모둠', '역할', '순번', '우리말 원문', '학생 영문 번역', '문법 피드백', '어휘 피드백', '표현 피드백', 'Paraphrase 피드백', '제공 AI']]);
     aiSheet.getRange("A1:L1").setFontWeight("bold");
   }
 
@@ -884,11 +884,14 @@ function generateAiFeedback(classNum, provider) {
   let lyricMap = {};
   lyrics.forEach(l => { lyricMap[l.seq] = l.korean || l.lyric; });
 
-  // 3. AI피드백 시트 가져오기 또는 생성
+  // 3. AI피드백 시트 가져오기 또는 생성 및 헤더 자동 갱신
   let aiSheet = ss.getSheetByName(SHEET_NAMES.AI_FEEDBACK);
   if (!aiSheet) {
     setupSheets();
     aiSheet = ss.getSheetByName(SHEET_NAMES.AI_FEEDBACK);
+  } else {
+    aiSheet.getRange(1, 1, 1, 12).setValues([['타임스탬프', '반', '모둠', '역할', '순번', '우리말 원문', '학생 영문 번역', '문법 피드백', '어휘 피드백', '표현 피드백', 'Paraphrase 피드백', '제공 AI']]);
+    aiSheet.getRange("A1:L1").setFontWeight("bold");
   }
 
   const systemPrompt = `당신은 친절하고 전문적인 중·고등학교 영어 선생님이자 번역 및 Paraphrasing 평가 전문가입니다.
