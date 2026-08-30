@@ -686,16 +686,17 @@ function callChatGPT(apiKey, systemPrompt, userPrompt) {
 function callClaude(apiKey, systemPrompt, userPrompt) {
   const url = 'https://api.anthropic.com/v1/messages';
   const candidateModels = [
-    'claude-3-5-sonnet-20240620',
-    'claude-3-5-sonnet-20241022',
-    'claude-3-haiku-20240307',
-    'claude-3-opus-20240229'
+    { id: 'claude-3-7-sonnet-20250219', name: 'Claude 3.7 Sonnet' },
+    { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet' },
+    { id: 'claude-3-5-haiku-20241022', name: 'Claude 3.5 Haiku' },
+    { id: 'claude-3-5-sonnet-20240620', name: 'Claude 3.5 Sonnet (20240620)' },
+    { id: 'claude-3-haiku-20240307', name: 'Claude 3 Haiku' }
   ];
 
   let lastErrorText = '';
-  for (let modelName of candidateModels) {
+  for (let modelObj of candidateModels) {
     const payload = {
-      model: modelName,
+      model: modelObj.id,
       max_tokens: 1000,
       system: systemPrompt,
       messages: [
@@ -719,20 +720,22 @@ function callClaude(apiKey, systemPrompt, userPrompt) {
 
     if (resCode === 200) {
       const json = JSON.parse(resText);
-      return json.content[0].text;
+      return {
+        text: json.content[0].text,
+        modelName: `Claude (${modelObj.name})`
+      };
     }
 
     lastErrorText = resText;
-    // 404 (not_found_error) 발생 시 다른 호환 모델 식별자로 자동 순회 시도
+    // 404 (not_found_error) 발생 시 다음 호환 모델로 자동 순회 시도
     if (resCode === 404) {
       continue;
     } else {
-      // API 키 인증 실패(401) 등 404 외 에러는 즉시 예외 발생
       throw new Error('Claude API 호출 실패 (' + resCode + '): ' + resText);
     }
   }
 
-  throw new Error('Claude API 호출 실패 (사용 계정에서 가능한 Claude 모델을 찾지 못했습니다): ' + lastErrorText);
+  throw new Error('Claude API 호출 실패 (사용 가능한 Claude 모델을 찾지 못했습니다): ' + lastErrorText);
 }
 
 function parseAiResponseJson(rawText) {
@@ -984,8 +987,11 @@ function generateAiFeedback(classNum, provider) {
 2) 주어 변경 문장, 부정어 포함 문장, 부정어 미포함 문장의 3가지 Paraphrase 제안 문장을 생성하여 "overall" 항목에 줄바꿈으로 구분하여 제공해 주세요.`;
 
     let rawResponse = '';
+    let actualProviderName = providerName;
     if (provider === 'claude') {
-      rawResponse = callClaude(apiKey, systemPrompt, userPrompt);
+      const claudeRes = callClaude(apiKey, systemPrompt, userPrompt);
+      rawResponse = claudeRes.text;
+      actualProviderName = claudeRes.modelName;
     } else {
       rawResponse = callChatGPT(apiKey, systemPrompt, userPrompt);
     }
@@ -1003,7 +1009,7 @@ function generateAiFeedback(classNum, provider) {
       parsed.vocabulary || '',
       parsed.expression || '',
       parsed.overall || '',
-      providerName
+      actualProviderName
     ];
 
     if (existingInfo && existingInfo.rowIndex) {
