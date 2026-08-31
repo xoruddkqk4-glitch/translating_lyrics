@@ -2522,17 +2522,30 @@
                 pageEl.className = "bg-white p-6 rounded-2xl shadow-sm border border-slate-300 mb-6";
 
                 let rowsHtml = '';
-                pageItems.forEach(item => {
-                    rowsHtml += `
-                        <tr style="height: 50px;">
-                            <td class="text-center font-bold text-black" style="border: 1px solid #000000; padding: 6px;">${item.seq}</td>
-                            <td class="text-center font-bold text-black" style="border: 1px solid #000000; padding: 6px;">${escapeHtml(item.role)}</td>
-                            <td style="border: 1px solid #000000; padding: 6px 8px; font-weight: 600; color: #000000; line-height: 1.35; font-size: 12px; word-break: break-word;">${escapeHtml(item.korean)}</td>
-                            <td style="border: 1px solid #000000; background-color: #ffffff;"></td>
-                            <td style="border: 1px solid #000000; background-color: #ffffff;"></td>
-                        </tr>
-                    `;
-                });
+                for (let i = 0; i < pageSize; i++) {
+                    const item = pageItems[i];
+                    if (item) {
+                        rowsHtml += `
+                            <tr style="height: 56px;">
+                                <td class="text-center font-bold text-black" style="border: 1px solid #000000; padding: 6px;">${item.seq}</td>
+                                <td class="text-center font-bold text-black" style="border: 1px solid #000000; padding: 6px;">${escapeHtml(item.role)}</td>
+                                <td style="border: 1px solid #000000; padding: 6px 8px; font-weight: 600; color: #000000; line-height: 1.35; font-size: 12px; word-break: break-word;">${escapeHtml(item.korean)}</td>
+                                <td style="border: 1px solid #000000; background-color: #ffffff;"></td>
+                                <td style="border: 1px solid #000000; background-color: #ffffff;"></td>
+                            </tr>
+                        `;
+                    } else {
+                        rowsHtml += `
+                            <tr style="height: 56px;">
+                                <td style="border: 1px solid #000000; padding: 6px;"></td>
+                                <td style="border: 1px solid #000000; padding: 6px;"></td>
+                                <td style="border: 1px solid #000000; padding: 6px 8px;"></td>
+                                <td style="border: 1px solid #000000; background-color: #ffffff;"></td>
+                                <td style="border: 1px solid #000000; background-color: #ffffff;"></td>
+                            </tr>
+                        `;
+                    }
+                }
 
                 pageEl.innerHTML = `
                     <div class="flex justify-between items-center mb-3 pb-2 border-b border-black">
@@ -2576,17 +2589,30 @@
                 const pageItems = currentHandoutData.slice(pageIdx * pageSize, (pageIdx + 1) * pageSize);
                 let rowsHtml = '';
 
-                pageItems.forEach(item => {
-                    rowsHtml += `
-                        <tr style="height: 52px;">
-                            <td style="border: 1px solid #000000; padding: 6px; text-align: center; font-weight: 800; color: #000000;">${item.seq}</td>
-                            <td style="border: 1px solid #000000; padding: 6px; text-align: center; font-weight: 700; color: #000000;">${escapeHtml(item.role)}</td>
-                            <td style="border: 1px solid #000000; padding: 6px 8px; font-weight: 600; color: #000000; line-height: 1.35; font-size: 12px; word-break: break-word;">${escapeHtml(item.korean)}</td>
-                            <td style="border: 1px solid #000000; background-color: #ffffff;"></td>
-                            <td style="border: 1px solid #000000; background-color: #ffffff;"></td>
-                        </tr>
-                    `;
-                });
+                for (let i = 0; i < pageSize; i++) {
+                    const item = pageItems[i];
+                    if (item) {
+                        rowsHtml += `
+                            <tr style="height: 16.5mm;">
+                                <td style="border: 1px solid #000000; padding: 5px 6px; text-align: center; font-weight: 800; color: #000000;">${item.seq}</td>
+                                <td style="border: 1px solid #000000; padding: 5px 6px; text-align: center; font-weight: 700; color: #000000;">${escapeHtml(item.role)}</td>
+                                <td style="border: 1px solid #000000; padding: 5px 6px; font-weight: 600; color: #000000; line-height: 1.35; font-size: 12px; word-break: break-word;">${escapeHtml(item.korean)}</td>
+                                <td style="border: 1px solid #000000; background-color: #ffffff;"></td>
+                                <td style="border: 1px solid #000000; background-color: #ffffff;"></td>
+                            </tr>
+                        `;
+                    } else {
+                        rowsHtml += `
+                            <tr style="height: 16.5mm;">
+                                <td style="border: 1px solid #000000; padding: 5px 6px;"></td>
+                                <td style="border: 1px solid #000000; padding: 5px 6px;"></td>
+                                <td style="border: 1px solid #000000; padding: 5px 6px;"></td>
+                                <td style="border: 1px solid #000000; background-color: #ffffff;"></td>
+                                <td style="border: 1px solid #000000; background-color: #ffffff;"></td>
+                            </tr>
+                        `;
+                    }
+                }
 
                 const isLastPage = (pageIdx === totalPages - 1);
                 pagesHtml += `
@@ -2627,10 +2653,17 @@
 <style>
     @page {
         size: A4 landscape;
-        margin: 10mm 12mm 10mm 12mm;
+        margin: 8mm 10mm 8mm 10mm;
     }
     @media print {
-        body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        html, body {
+            width: 277mm;
+            height: 194mm;
+            margin: 0;
+            padding: 0;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
         .page-break { page-break-after: always; break-after: page; }
     }
     body {
@@ -2643,28 +2676,29 @@
     .page-container {
         width: 100%;
         box-sizing: border-box;
-        padding: 4px 0;
+        padding: 0;
+        margin: 0;
     }
     .header-table {
         width: 100%;
-        margin-bottom: 10px;
+        margin-bottom: 6px;
         border-collapse: collapse;
     }
     .header-title {
-        font-size: 19px;
+        font-size: 18px;
         font-weight: 800;
         color: #000000;
     }
     .header-info {
         text-align: right;
-        font-size: 12px;
+        font-size: 11px;
         font-weight: 600;
         color: #000000;
     }
     .info-box {
         display: inline-block;
         border: 1px solid #000000;
-        padding: 4px 10px;
+        padding: 3px 8px;
         border-radius: 4px;
         background: #ffffff;
     }
@@ -2678,17 +2712,20 @@
         color: #000000;
         font-size: 13px;
         font-weight: 700;
-        padding: 8px 6px;
+        padding: 6px 4px;
         border: 1.5px solid #000000;
         text-align: center;
     }
     .handout-table td {
         border: 1px solid #000000;
-        padding: 6px;
+        padding: 5px 6px;
         font-size: 12px;
         vertical-align: middle;
         word-break: break-word;
         background-color: #ffffff;
+    }
+    .handout-table tbody tr {
+        height: 16.5mm;
     }
 </style>
 </head>
@@ -2786,18 +2823,31 @@
                 frontPageEl.className = "bg-white p-6 rounded-2xl shadow-sm border border-slate-300 mb-6";
 
                 let frontRowsHtml = '';
-                pageItems.forEach(item => {
-                    const engText = item.lyric || item.english || '';
-                    frontRowsHtml += `
-                        <tr style="height: 50px;">
-                            <td class="text-center font-bold text-black" style="border: 1px solid #000000; padding: 6px;">${item.seq}</td>
-                            <td class="text-center font-bold text-black" style="border: 1px solid #000000; padding: 6px;">${escapeHtml(item.role)}</td>
-                            <td style="border: 1px solid #000000; padding: 6px 8px; font-weight: 600; color: #000000; line-height: 1.35; font-size: 12px; word-break: break-word;">${escapeHtml(item.korean)}</td>
-                            <td style="border: 1px solid #000000; padding: 6px 8px; font-weight: 700; color: #ffffff; -webkit-text-stroke: 0.8px #888888; line-height: 1.35; font-size: 13px; word-break: break-word; background-color: #ffffff;">${escapeHtml(engText)}</td>
-                            <td style="border: 1px solid #000000; background-color: #ffffff;"></td>
-                        </tr>
-                    `;
-                });
+                for (let i = 0; i < pageSize; i++) {
+                    const item = pageItems[i];
+                    if (item) {
+                        const engText = item.lyric || item.english || '';
+                        frontRowsHtml += `
+                            <tr style="height: 56px;">
+                                <td class="text-center font-bold text-black" style="border: 1px solid #000000; padding: 6px;">${item.seq}</td>
+                                <td class="text-center font-bold text-black" style="border: 1px solid #000000; padding: 6px;">${escapeHtml(item.role)}</td>
+                                <td style="border: 1px solid #000000; padding: 6px 8px; font-weight: 600; color: #000000; line-height: 1.35; font-size: 12px; word-break: break-word;">${escapeHtml(item.korean)}</td>
+                                <td style="border: 1px solid #000000; padding: 6px 8px; font-weight: 700; color: #ffffff; -webkit-text-stroke: 0.8px #888888; line-height: 1.35; font-size: 13px; word-break: break-word; background-color: #ffffff;">${escapeHtml(engText)}</td>
+                                <td style="border: 1px solid #000000; background-color: #ffffff;"></td>
+                            </tr>
+                        `;
+                    } else {
+                        frontRowsHtml += `
+                            <tr style="height: 56px;">
+                                <td style="border: 1px solid #000000; padding: 6px;"></td>
+                                <td style="border: 1px solid #000000; padding: 6px;"></td>
+                                <td style="border: 1px solid #000000; padding: 6px 8px;"></td>
+                                <td style="border: 1px solid #000000; background-color: #ffffff;"></td>
+                                <td style="border: 1px solid #000000; background-color: #ffffff;"></td>
+                            </tr>
+                        `;
+                    }
+                }
 
                 frontPageEl.innerHTML = `
                     <div class="flex justify-between items-center mb-3 pb-2 border-b border-black">
@@ -2833,17 +2883,30 @@
                 backPageEl.className = "bg-white p-6 rounded-2xl shadow-sm border border-slate-300 mb-6";
 
                 let backRowsHtml = '';
-                pageItems.forEach(item => {
-                    backRowsHtml += `
-                        <tr style="height: 50px;">
-                            <td class="text-center font-bold text-black" style="border: 1px solid #000000; padding: 6px;">${item.seq}</td>
-                            <td class="text-center font-bold text-black" style="border: 1px solid #000000; padding: 6px;">${escapeHtml(item.role)}</td>
-                            <td style="border: 1px solid #000000; padding: 6px 8px; font-weight: 600; color: #000000; line-height: 1.35; font-size: 12px; word-break: break-word;">${escapeHtml(item.korean)}</td>
-                            <td style="border: 1px solid #000000; background-color: #ffffff;"></td>
-                            <td style="border: 1px solid #000000; background-color: #ffffff;"></td>
-                        </tr>
-                    `;
-                });
+                for (let i = 0; i < pageSize; i++) {
+                    const item = pageItems[i];
+                    if (item) {
+                        backRowsHtml += `
+                            <tr style="height: 56px;">
+                                <td class="text-center font-bold text-black" style="border: 1px solid #000000; padding: 6px;">${item.seq}</td>
+                                <td class="text-center font-bold text-black" style="border: 1px solid #000000; padding: 6px;">${escapeHtml(item.role)}</td>
+                                <td style="border: 1px solid #000000; padding: 6px 8px; font-weight: 600; color: #000000; line-height: 1.35; font-size: 12px; word-break: break-word;">${escapeHtml(item.korean)}</td>
+                                <td style="border: 1px solid #000000; background-color: #ffffff;"></td>
+                                <td style="border: 1px solid #000000; background-color: #ffffff;"></td>
+                            </tr>
+                        `;
+                    } else {
+                        backRowsHtml += `
+                            <tr style="height: 56px;">
+                                <td style="border: 1px solid #000000; padding: 6px;"></td>
+                                <td style="border: 1px solid #000000; padding: 6px;"></td>
+                                <td style="border: 1px solid #000000; padding: 6px 8px;"></td>
+                                <td style="border: 1px solid #000000; background-color: #ffffff;"></td>
+                                <td style="border: 1px solid #000000; background-color: #ffffff;"></td>
+                            </tr>
+                        `;
+                    }
+                }
 
                 backPageEl.innerHTML = `
                     <div class="flex justify-between items-center mb-3 pb-2 border-b border-black">
@@ -2888,18 +2951,31 @@
                 
                 // Front Page HTML
                 let frontRowsHtml = '';
-                pageItems.forEach(item => {
-                    const engText = item.lyric || item.english || '';
-                    frontRowsHtml += `
-                        <tr style="height: 52px;">
-                            <td style="border: 1px solid #000000; padding: 6px; text-align: center; font-weight: 800; color: #000000;">${item.seq}</td>
-                            <td style="border: 1px solid #000000; padding: 6px; text-align: center; font-weight: 700; color: #000000;">${escapeHtml(item.role)}</td>
-                            <td style="border: 1px solid #000000; padding: 6px 8px; font-weight: 600; color: #000000; line-height: 1.35; font-size: 12px; word-break: break-word;">${escapeHtml(item.korean)}</td>
-                            <td style="border: 1px solid #000000; padding: 6px 8px; font-weight: 700; color: #ffffff; -webkit-text-stroke: 0.8px #888888; line-height: 1.35; font-size: 13px; word-break: break-word; background-color: #ffffff;">${escapeHtml(engText)}</td>
-                            <td style="border: 1px solid #000000; background-color: #ffffff;"></td>
-                        </tr>
-                    `;
-                });
+                for (let i = 0; i < pageSize; i++) {
+                    const item = pageItems[i];
+                    if (item) {
+                        const engText = item.lyric || item.english || '';
+                        frontRowsHtml += `
+                            <tr style="height: 16.5mm;">
+                                <td style="border: 1px solid #000000; padding: 5px 6px; text-align: center; font-weight: 800; color: #000000;">${item.seq}</td>
+                                <td style="border: 1px solid #000000; padding: 5px 6px; text-align: center; font-weight: 700; color: #000000;">${escapeHtml(item.role)}</td>
+                                <td style="border: 1px solid #000000; padding: 5px 6px; font-weight: 600; color: #000000; line-height: 1.35; font-size: 12px; word-break: break-word;">${escapeHtml(item.korean)}</td>
+                                <td style="border: 1px solid #000000; padding: 5px 6px; font-weight: 700; color: #ffffff; -webkit-text-stroke: 0.8px #888888; line-height: 1.35; font-size: 13px; word-break: break-word; background-color: #ffffff;">${escapeHtml(engText)}</td>
+                                <td style="border: 1px solid #000000; background-color: #ffffff;"></td>
+                            </tr>
+                        `;
+                    } else {
+                        frontRowsHtml += `
+                            <tr style="height: 16.5mm;">
+                                <td style="border: 1px solid #000000; padding: 5px 6px;"></td>
+                                <td style="border: 1px solid #000000; padding: 5px 6px;"></td>
+                                <td style="border: 1px solid #000000; padding: 5px 6px;"></td>
+                                <td style="border: 1px solid #000000; background-color: #ffffff;"></td>
+                                <td style="border: 1px solid #000000; background-color: #ffffff;"></td>
+                            </tr>
+                        `;
+                    }
+                }
 
                 pagesHtml += `
                     <div class="page-container page-break">
@@ -2931,17 +3007,30 @@
 
                 // Back Page HTML
                 let backRowsHtml = '';
-                pageItems.forEach(item => {
-                    backRowsHtml += `
-                        <tr style="height: 52px;">
-                            <td style="border: 1px solid #000000; padding: 6px; text-align: center; font-weight: 800; color: #000000;">${item.seq}</td>
-                            <td style="border: 1px solid #000000; padding: 6px; text-align: center; font-weight: 700; color: #000000;">${escapeHtml(item.role)}</td>
-                            <td style="border: 1px solid #000000; padding: 6px 8px; font-weight: 600; color: #000000; line-height: 1.35; font-size: 12px; word-break: break-word;">${escapeHtml(item.korean)}</td>
-                            <td style="border: 1px solid #000000; background-color: #ffffff;"></td>
-                            <td style="border: 1px solid #000000; background-color: #ffffff;"></td>
-                        </tr>
-                    `;
-                });
+                for (let i = 0; i < pageSize; i++) {
+                    const item = pageItems[i];
+                    if (item) {
+                        backRowsHtml += `
+                            <tr style="height: 16.5mm;">
+                                <td style="border: 1px solid #000000; padding: 5px 6px; text-align: center; font-weight: 800; color: #000000;">${item.seq}</td>
+                                <td style="border: 1px solid #000000; padding: 5px 6px; text-align: center; font-weight: 700; color: #000000;">${escapeHtml(item.role)}</td>
+                                <td style="border: 1px solid #000000; padding: 5px 6px; font-weight: 600; color: #000000; line-height: 1.35; font-size: 12px; word-break: break-word;">${escapeHtml(item.korean)}</td>
+                                <td style="border: 1px solid #000000; background-color: #ffffff;"></td>
+                                <td style="border: 1px solid #000000; background-color: #ffffff;"></td>
+                            </tr>
+                        `;
+                    } else {
+                        backRowsHtml += `
+                            <tr style="height: 16.5mm;">
+                                <td style="border: 1px solid #000000; padding: 5px 6px;"></td>
+                                <td style="border: 1px solid #000000; padding: 5px 6px;"></td>
+                                <td style="border: 1px solid #000000; padding: 5px 6px;"></td>
+                                <td style="border: 1px solid #000000; background-color: #ffffff;"></td>
+                                <td style="border: 1px solid #000000; background-color: #ffffff;"></td>
+                            </tr>
+                        `;
+                    }
+                }
 
                 const isLastPage = (sheetIdx === totalSheets - 1);
                 pagesHtml += `
@@ -2982,10 +3071,17 @@
 <style>
     @page {
         size: A4 landscape;
-        margin: 10mm 12mm 10mm 12mm;
+        margin: 8mm 10mm 8mm 10mm;
     }
     @media print {
-        body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        html, body {
+            width: 277mm;
+            height: 194mm;
+            margin: 0;
+            padding: 0;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
         .page-break { page-break-after: always; break-after: page; }
     }
     body {
@@ -2998,28 +3094,29 @@
     .page-container {
         width: 100%;
         box-sizing: border-box;
-        padding: 4px 0;
+        padding: 0;
+        margin: 0;
     }
     .header-table {
         width: 100%;
-        margin-bottom: 10px;
+        margin-bottom: 6px;
         border-collapse: collapse;
     }
     .header-title {
-        font-size: 19px;
+        font-size: 18px;
         font-weight: 800;
         color: #000000;
     }
     .header-info {
         text-align: right;
-        font-size: 12px;
+        font-size: 11px;
         font-weight: 600;
         color: #000000;
     }
     .info-box {
         display: inline-block;
         border: 1px solid #000000;
-        padding: 4px 10px;
+        padding: 3px 8px;
         border-radius: 4px;
         background: #ffffff;
     }
@@ -3033,17 +3130,20 @@
         color: #000000;
         font-size: 13px;
         font-weight: 700;
-        padding: 8px 6px;
+        padding: 6px 4px;
         border: 1.5px solid #000000;
         text-align: center;
     }
     .handout-table td {
         border: 1px solid #000000;
-        padding: 6px;
+        padding: 5px 6px;
         font-size: 12px;
         vertical-align: middle;
         word-break: break-word;
         background-color: #ffffff;
+    }
+    .handout-table tbody tr {
+        height: 16.5mm;
     }
 </style>
 </head>
