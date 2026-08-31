@@ -29,19 +29,35 @@ const SHEET_NAMES = {
 };
 
 function findClassSheet(ss, className) {
-  if (!className) return null;
-  const strName = String(className).trim();
+  if (!className || !String(className).trim()) return null;
+  let strName = String(className).trim().replace(/^\[학급\]\s*/, '');
+  if (!strName || strName === '인' || strName === 'undefined' || strName === 'null') return null;
   const options = [
     `[학급] ${strName}`,
     `[학급]${strName}`,
     strName,
-    `${strName}반`
+    strName.endsWith('반') ? strName : `${strName}반`
   ];
   for (let opt of options) {
     let sheet = ss.getSheetByName(opt);
     if (sheet) return sheet;
   }
   return null;
+}
+
+function parseGroupIds(val) {
+  if (!val) return [];
+  if (val instanceof Date) {
+    let m = val.getMonth() + 1;
+    let d = val.getDate();
+    return [m, d];
+  }
+  let str = String(val).trim();
+  if (str.startsWith("'")) str = str.substring(1).trim();
+  if (str.startsWith('2002,') || str.startsWith('2002.') || str.startsWith('2002/')) {
+    str = str.replace(/^2002[,\./\s]*/, '2, ');
+  }
+  return str.split(',').map(g => parseInt(g.trim())).filter(g => !isNaN(g));
 }
 
 function setupSheets() {
@@ -230,6 +246,15 @@ function getSettings() {
     settings.classes = [];
     for (let i = 1; i <= legacyNumClasses; i++) {
       settings.classes.push(`${i}반`);
+    }
+  }
+
+  if (settings.classes && Array.isArray(settings.classes)) {
+    settings.classes = settings.classes
+      .map(c => String(c).trim())
+      .filter(c => c && c !== '인' && c !== 'undefined' && c !== 'null');
+    if (settings.classes.length === 0) {
+      settings.classes = ['1반', '2반', '3반'];
     }
   }
   
@@ -567,7 +592,7 @@ function getSubmittedAnswers(classNum, lessonId) {
       if (b_lesson == targetLesson || (!r[4] && targetLesson == '1차시')) {
         bestMap[b_seq] = {
           best: b_best,
-          groups: b_groups ? b_groups.toString().split(',').map(g => parseInt(g.trim())).filter(g => !isNaN(g)) : []
+          groups: parseGroupIds(b_groups)
         };
       }
     });
@@ -580,6 +605,23 @@ function getSubmittedAnswers(classNum, lessonId) {
          submissionObj[gNum] = subMap[lyric.seq][gNum].translation;
       });
     }
+
+    let currentBest = bestMap[lyric.seq] ? bestMap[lyric.seq].best : "";
+    let currentGroups = bestMap[lyric.seq] ? bestMap[lyric.seq].groups : [];
+
+    if (currentBest && String(currentBest).trim().length > 0) {
+      const targetText = String(currentBest).trim();
+      Object.keys(submissionObj).forEach(gNumStr => {
+        const gNum = parseInt(gNumStr);
+        const trans = (submissionObj[gNumStr] || '').trim();
+        if (trans && trans === targetText) {
+          if (!currentGroups.includes(gNum)) {
+            currentGroups.push(gNum);
+          }
+        }
+      });
+      currentGroups.sort((a, b) => a - b);
+    }
     
     return {
       seq: lyric.seq,
@@ -587,24 +629,33 @@ function getSubmittedAnswers(classNum, lessonId) {
       korean: lyric.korean || lyric.lyric,
       lyric: lyric.lyric || lyric.korean,
       submissions: submissionObj,
-      best: bestMap[lyric.seq] ? bestMap[lyric.seq].best : "",
-      bestGroups: bestMap[lyric.seq] ? bestMap[lyric.seq].groups : []
+      best: currentBest,
+      bestGroups: currentGroups
     };
   });
 }
 
 function saveClassBest(classNum, seq, lyricText, bestAnswer, groupIds, lessonId) {
+  if (!classNum || !String(classNum).trim()) return false;
+  let cleanClass = String(classNum).trim().replace(/^\[학급\]\s*/, '');
+  if (!cleanClass || cleanClass === '인' || cleanClass === 'undefined' || cleanClass === 'null') return false;
+
   const targetLesson = (lessonId && String(lessonId).trim()) ? String(lessonId).trim() : getSettings().activeLesson;
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let classSheet = findClassSheet(ss, classNum);
-  const targetSheetName = `[학급] ${classNum}`;
+  let classSheet = findClassSheet(ss, cleanClass);
+  const targetSheetName = `[학급] ${cleanClass}`;
   if (!classSheet) {
     classSheet = ss.insertSheet(targetSheetName);
     classSheet.appendRow(['순번', '영어 문장', '베스트 정답', '채택모둠', '차시ID']);
     classSheet.getRange("A1:E1").setFontWeight("bold");
+    classSheet.getRange("D2:D500").setNumberFormat("@");
   } else {
+    if (classSheet.getName() !== targetSheetName) {
+      classSheet.setName(targetSheetName);
+    }
     classSheet.getRange(1, 1, 1, 5).setValues([['순번', '영어 문장', '베스트 정답', '채택모둠', '차시ID']]);
     classSheet.getRange("A1:E1").setFontWeight("bold");
+    classSheet.getRange("D2:D500").setNumberFormat("@");
   }
   
   const lastRow = classSheet.getLastRow();
@@ -622,33 +673,26 @@ function saveClassBest(classNum, seq, lyricText, bestAnswer, groupIds, lessonId)
     }
   }
   
-  const groupsStr = Array.isArray(groupIds) ? groupIds.join(', ') : (groupIds || '');
+  const parsedGroups = parseGroupIds(groupIds);
+  const groupsStr = parsedGroups.join(', ');
+  const groupsCellVal = groupsStr ? `'${groupsStr}` : '';
   
   if (foundRow > -1) {
-    classSheet.getRange(foundRow, 2, 1, 4).setValues([[lyricText, bestAnswer, groupsStr, targetLesson]]);
+    classSheet.getRange(foundRow, 2, 1, 4).setValues([[lyricText, bestAnswer, groupsCellVal, targetLesson]]);
   } else {
-    classSheet.appendRow([seq, lyricText, bestAnswer, groupsStr, targetLesson]);
+    classSheet.appendRow([seq, lyricText, bestAnswer, groupsCellVal, targetLesson]);
   }
   return true;
 }
 
 function getLeaderboard(classNum, lessonId) {
   const targetLesson = (lessonId && String(lessonId).trim()) ? String(lessonId).trim() : getSettings().activeLesson;
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const classSheet = findClassSheet(ss, classNum);
-  
-  if (!classSheet || classSheet.getLastRow() <= 1) return [];
-  
-  const maxCols = Math.max(5, classSheet.getLastColumn());
-  const data = classSheet.getRange(2, 1, classSheet.getLastRow() - 1, maxCols).getValues();
+  const submittedAnswers = getSubmittedAnswers(classNum, targetLesson);
   let groupCounts = {};
   
-  data.forEach(r => {
-    let groupsStr = r[3];
-    let r_lesson = r[4] ? String(r[4]).trim() : '1차시';
-    if ((r_lesson == targetLesson || (!r[4] && targetLesson == '1차시')) && groupsStr) {
-      let groups = groupsStr.toString().split(',').map(s => s.trim()).filter(s => s);
-      groups.forEach(g => {
+  submittedAnswers.forEach(item => {
+    if (item.bestGroups && item.bestGroups.length > 0) {
+      item.bestGroups.forEach(g => {
         groupCounts[g] = (groupCounts[g] || 0) + 1;
       });
     }
@@ -700,7 +744,7 @@ function getAllClassesBest(lessonId) {
         if (c_lesson == targetLesson || (!r[4] && targetLesson == '1차시')) {
           classBestsMap[cName][r[0]] = {
             best: r[2],
-            groups: r[3]
+            groups: parseGroupIds(r[3]).join(', ')
           };
         }
       });
@@ -1568,4 +1612,72 @@ function getPeerEvaluationResults(classNum, groupNum, role) {
   } catch (err) {
     return [];
   }
+}
+
+function getSubmissionDashboardData(classNum, lessonId) {
+  const targetLesson = (lessonId && String(lessonId).trim()) ? String(lessonId).trim() : getSettings().activeLesson;
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const subSheet = ss.getSheetByName(SHEET_NAMES.SUBMISSIONS);
+  const settings = getSettings();
+
+  const targetClass = (classNum && String(classNum).trim()) ? String(classNum).trim() : (settings.classes && settings.classes.length ? settings.classes[0] : '1반');
+
+  let submittedMap = {};
+  if (subSheet && subSheet.getLastRow() > 1) {
+    const maxCols = Math.max(7, subSheet.getLastColumn());
+    const data = subSheet.getRange(2, 1, subSheet.getLastRow() - 1, maxCols).getValues();
+    data.forEach(r => {
+      let r_time = r[0];
+      let r_class = r[1] ? String(r[1]).trim() : '';
+      let r_group = r[2] ? parseInt(r[2]) : 0;
+      let r_role = r[3] ? String(r[3]).trim() : '';
+      let r_seq = r[4] ? parseInt(r[4]) : 0;
+      let r_lesson = r[6] ? String(r[6]).trim() : '1차시';
+
+      if (r_class == targetClass && (r_lesson == targetLesson || (!r[6] && targetLesson == '1차시'))) {
+        let key = `${r_group}_${r_role}`;
+        submittedMap[key] = {
+          timestamp: r_time ? Utilities.formatDate(new Date(r_time), Session.getScriptTimeZone(), 'HH:mm') : '',
+          text: r[5] || '',
+          seq: r_seq
+        };
+      }
+    });
+  }
+
+  const numGroups = settings.numGroups || 8;
+  const roles = settings.roles || ['A', 'B', 'C', 'D'];
+  let groups = [];
+  let totalSubmittedCount = 0;
+
+  for (let g = 1; g <= numGroups; g++) {
+    let roleList = [];
+    roles.forEach(role => {
+      let key = `${g}_${role}`;
+      let isSub = !!submittedMap[key];
+      if (isSub) totalSubmittedCount++;
+      roleList.push({
+        role: role,
+        isSubmitted: isSub,
+        timestamp: isSub ? submittedMap[key].timestamp : '',
+        text: isSub ? submittedMap[key].text : ''
+      });
+    });
+    groups.push({
+      group: g,
+      roles: roleList
+    });
+  }
+
+  const totalExpected = numGroups * roles.length;
+  const percent = totalExpected > 0 ? Math.round((totalSubmittedCount / totalExpected) * 100) : 0;
+
+  return {
+    classNum: targetClass,
+    activeLesson: targetLesson,
+    totalSubmitted: totalSubmittedCount,
+    totalExpected: totalExpected,
+    percent: percent,
+    groups: groups
+  };
 }

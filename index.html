@@ -210,6 +210,13 @@
 
         <!-- 1. Student View -->
         <section id="studentView" class="view-section active max-w-3xl mx-auto">
+            <!-- Teacher Only: Realtime Submission Status Button -->
+            <div class="teacher-only hidden mb-4 flex justify-end">
+                <button onclick="openSubmissionDashboardModal()" class="px-5 py-3 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white font-extrabold rounded-2xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200 flex items-center gap-2 text-sm cursor-pointer">
+                    <span>📊 실시간 학생 제출 현황 대시보드</span>
+                </button>
+            </div>
+
             <div class="glass-panel p-8 rounded-2xl mb-8">
                 <h2
                     class="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 mb-6">
@@ -706,6 +713,55 @@
         </div>
     </div>
 
+    <!-- Submission Dashboard Modal -->
+    <div id="submissionDashboardModal" class="fixed inset-0 z-[160] bg-slate-950/80 backdrop-blur-md hidden items-center justify-center p-4 md:p-8" onclick="closeSubmissionDashboardModal()">
+        <div class="bg-white rounded-3xl p-6 md:p-10 max-w-5xl w-full max-h-[90vh] overflow-y-auto shadow-2xl relative border border-slate-100 flex flex-col justify-between" onclick="event.stopPropagation()">
+            <button onclick="closeSubmissionDashboardModal()" class="absolute top-6 right-6 w-10 h-10 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-full flex items-center justify-center font-bold text-xl transition cursor-pointer" title="닫기 (X)">
+                ✕
+            </button>
+
+            <div>
+                <div class="flex flex-wrap items-center justify-between gap-4 mb-6 border-b pb-4 border-slate-100 pr-10">
+                    <div class="flex items-center gap-3">
+                        <span class="w-12 h-12 bg-teal-100 text-teal-700 rounded-2xl flex items-center justify-center text-2xl font-extrabold shadow-sm">📊</span>
+                        <div>
+                            <h3 class="text-2xl font-black text-slate-800">실시간 학생 제출 현황 대시보드</h3>
+                            <p class="text-xs text-slate-400 font-medium">수업에 참여한 학생들의 모둠별/역할별 영작 제출 현황을 실시간으로 확인합니다.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <select id="subDashClassSelect" onchange="loadSubmissionDashboardData()" class="p-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-teal-500 font-extrabold text-slate-700 text-sm bg-slate-50 cursor-pointer"></select>
+                        <button onclick="loadSubmissionDashboardData()" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-bold text-xs shadow transition flex items-center gap-1 cursor-pointer">
+                            🔄 새로고침
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Status Progress Area -->
+                <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 mb-6">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-xs font-bold text-slate-500 uppercase tracking-wide">학급 전체 제출율</span>
+                        <span id="subDashProgressText" class="text-sm font-black text-teal-600">0/0명 (0%)</span>
+                    </div>
+                    <div class="w-full bg-slate-200 rounded-full h-3.5 overflow-hidden">
+                        <div id="subDashProgressBar" class="bg-gradient-to-r from-teal-500 to-emerald-500 h-3.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- Matrix Cards Container -->
+                <div id="subDashMatrixContainer" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 my-4">
+                    <!-- Injected via JS -->
+                </div>
+            </div>
+
+            <div class="mt-6 pt-4 border-t border-slate-100 text-right">
+                <button onclick="closeSubmissionDashboardModal()" class="px-6 py-2.5 bg-slate-800 hover:bg-slate-900 text-white text-sm font-bold rounded-xl shadow transition">
+                    닫기
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- PDF Handout Modal (Pre-Class) -->
     <div id="pdfHandoutModal" class="fixed inset-0 z-[160] bg-slate-950/80 backdrop-blur-md hidden items-center justify-center p-4 md:p-6" onclick="closePdfHandoutModal()">
         <div class="bg-white rounded-3xl p-6 md:p-8 max-w-5xl w-full max-h-[92vh] overflow-y-auto shadow-2xl relative border border-slate-100 flex flex-col justify-between" onclick="event.stopPropagation()">
@@ -833,6 +889,35 @@
             document.body.style.overflow = 'hidden';
         }
 
+        function getShuffledCandidates(seq, submissionObj) {
+            let mapByText = {};
+            const numGroups = (appSettings && appSettings.numGroups) || 8;
+            for (let g = 1; g <= numGroups; g++) {
+                const raw = submissionObj ? submissionObj[g] : null;
+                if (raw && String(raw).trim().length > 0) {
+                    const cleanText = String(raw).trim();
+                    if (!mapByText[cleanText]) {
+                        mapByText[cleanText] = {
+                            text: cleanText,
+                            groups: [g]
+                        };
+                    } else {
+                        mapByText[cleanText].groups.push(g);
+                    }
+                }
+            }
+
+            let list = Object.values(mapByText);
+            const seed = (parseInt(seq) || 1) * 997;
+            for (let i = list.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.abs(Math.sin(seed + i)) * (i + 1));
+                const temp = list[i];
+                list[i] = list[j];
+                list[j] = temp;
+            }
+            return list;
+        }
+
         function renderZoomModalAction() {
             const area = document.getElementById('zoomModalActionArea');
             if (!area) return;
@@ -843,7 +928,13 @@
             if (currentZoomData.type === 'class') {
                 const { seq, g, trans } = currentZoomData;
                 const item = currentClassData.find(i => i.seq == seq);
-                const isSelected = item && item.bestGroups && item.bestGroups.includes(g);
+                const candList = getShuffledCandidates(seq, item ? item.submissions : null);
+                const cand = candList.find(c => c.groups.includes(g) || (c.text && c.text.trim() === (trans || '').trim()));
+                const candIdx = cand ? candList.indexOf(cand) : -1;
+                const optLabel = candIdx >= 0 ? `보기 ${String.fromCharCode(65 + candIdx)}` : `보기`;
+                const isSelected = item && item.best && item.best.trim() === (trans || '').trim();
+
+                const countBadgeText = cand ? ` (${cand.groups.length}개 모둠 제출)` : '';
 
                 const btn = document.createElement('button');
                 btn.type = 'button';
@@ -854,7 +945,7 @@
                 }`;
                 
                 btn.innerHTML = `
-                    <span class="text-base font-bold">🏆 [${g}모둠] 반 대표 문장 선정</span>
+                    <span class="text-base font-bold">🏆 [${optLabel}${countBadgeText}] 반 대표 문장 선정</span>
                     <div class="w-12 h-6 rounded-full p-0.5 transition-colors duration-200 flex items-center ${isSelected ? 'bg-white/40 justify-end' : 'bg-slate-300 justify-start'}">
                         <div class="w-5 h-5 bg-white rounded-full shadow-md transform transition-transform"></div>
                     </div>
@@ -977,6 +1068,131 @@
                 if (headerLessonContainer) { headerLessonContainer.classList.remove('hidden'); headerLessonContainer.style.setProperty('display', 'inline-flex', 'important'); }
                 if (headerTitle) headerTitle.innerText = '🎤 한영 번역 마스터 (교사용)';
             }
+
+            document.querySelectorAll('.teacher-only').forEach(el => {
+                if (isStudentMode) {
+                    el.classList.add('hidden');
+                    el.style.setProperty('display', 'none', 'important');
+                } else {
+                    el.classList.remove('hidden');
+                    el.style.removeProperty('display');
+                }
+            });
+        }
+
+        // --- Submission Dashboard Modal JS ---
+        function openSubmissionDashboardModal() {
+            const modal = document.getElementById('submissionDashboardModal');
+            if (!modal) return;
+
+            const sel = document.getElementById('subDashClassSelect');
+            if (sel) {
+                sel.innerHTML = '';
+                (appSettings.classes || ['1반', '2반', '3반']).forEach(c => {
+                    sel.add(new Option(c, c));
+                });
+                const studentClass = document.getElementById('studentClass');
+                const voteClassSelect = document.getElementById('voteClassSelect');
+                if (studentClass && studentClass.value) sel.value = studentClass.value;
+                else if (voteClassSelect && voteClassSelect.value) sel.value = voteClassSelect.value;
+            }
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            document.body.style.overflow = 'hidden';
+
+            loadSubmissionDashboardData();
+        }
+
+        function closeSubmissionDashboardModal() {
+            const modal = document.getElementById('submissionDashboardModal');
+            if (!modal) return;
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            document.body.style.overflow = 'auto';
+        }
+
+        function loadSubmissionDashboardData() {
+            const sel = document.getElementById('subDashClassSelect');
+            const classNum = sel ? sel.value : '';
+            if (!classNum) return;
+
+            const container = document.getElementById('subDashMatrixContainer');
+            if (container) {
+                container.innerHTML = '<div class="col-span-full py-12 text-center text-slate-400 font-medium animate-pulse">제출 현황 데이터를 불러오는 중입니다...</div>';
+            }
+
+            if (isGoogleEnv) {
+                google.script.run
+                    .withSuccessHandler(renderSubmissionDashboardModal)
+                    .withFailureHandler(handleGlobalError)
+                    .getSubmissionDashboardData(classNum);
+            } else {
+                setTimeout(() => {
+                    renderSubmissionDashboardModal({
+                        classNum: classNum,
+                        activeLesson: '1차시',
+                        totalSubmitted: 14,
+                        totalExpected: 32,
+                        percent: 44,
+                        groups: Array.from({ length: appSettings.numGroups || 8 }, (_, i) => ({
+                            group: i + 1,
+                            roles: (appSettings.roles || ['A', 'B', 'C', 'D']).map((r, rIdx) => ({
+                                role: r,
+                                isSubmitted: (i + rIdx) % 2 === 0,
+                                timestamp: (i + rIdx) % 2 === 0 ? '14:25' : ''
+                            }))
+                        }))
+                    });
+                }, 500);
+            }
+        }
+
+        function renderSubmissionDashboardModal(data) {
+            if (!data) return;
+
+            const progText = document.getElementById('subDashProgressText');
+            const progBar = document.getElementById('subDashProgressBar');
+            if (progText) progText.innerText = `${data.totalSubmitted}/${data.totalExpected}명 (${data.percent}%)`;
+            if (progBar) progBar.style.width = `${data.percent}%`;
+
+            const container = document.getElementById('subDashMatrixContainer');
+            if (!container) return;
+            container.innerHTML = '';
+
+            (data.groups || []).forEach(gItem => {
+                const card = document.createElement('div');
+                card.className = "bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between";
+                
+                let rolesHtml = (gItem.roles || []).map(rItem => {
+                    if (rItem.isSubmitted) {
+                        return `
+                            <div class="flex items-center justify-between p-2 bg-emerald-50 border border-emerald-200 rounded-xl text-xs font-bold text-emerald-800 mb-1.5">
+                                <span>역할 ${rItem.role}</span>
+                                <span class="text-[10px] bg-emerald-600 text-white px-1.5 py-0.5 rounded shadow-sm">✓ ${rItem.timestamp || '제출'}</span>
+                            </div>
+                        `;
+                    } else {
+                        return `
+                            <div class="flex items-center justify-between p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-400 mb-1.5">
+                                <span>역할 ${rItem.role}</span>
+                                <span class="text-[10px] text-slate-400 italic">⏳ 미제출</span>
+                            </div>
+                        `;
+                    }
+                }).join('');
+
+                card.innerHTML = `
+                    <div class="font-extrabold text-sm text-slate-700 border-b pb-2 mb-3 flex justify-between items-center">
+                        <span>${gItem.group}모둠</span>
+                        <span class="text-xs text-slate-400 font-normal">(${(gItem.roles || []).filter(r => r.isSubmitted).length}/${(gItem.roles || []).length})</span>
+                    </div>
+                    <div class="space-y-1">
+                        ${rolesHtml}
+                    </div>
+                `;
+                container.appendChild(card);
+            });
         }
 
         function updateStudentNavState() {
@@ -1793,6 +2009,19 @@
             }
 
             data.forEach(item => {
+                let selectedGroups = Array.isArray(item.bestGroups) ? [...item.bestGroups] : [];
+
+                if (item.best && String(item.best).trim().length > 0 && selectedGroups.length === 0) {
+                    const bestText = String(item.best).trim();
+                    for (let g = 1; g <= appSettings.numGroups; g++) {
+                        const trans = item.submissions ? String(item.submissions[g] || '').trim() : '';
+                        if (trans && trans === bestText) {
+                            selectedGroups.push(g);
+                        }
+                    }
+                }
+                item.bestGroups = selectedGroups;
+
                 const card = document.createElement('div');
                 card.className = "glass-panel rounded-2xl overflow-hidden border border-slate-200 shadow-sm";
 
@@ -1813,28 +2042,37 @@
                 const ansGrid = document.createElement('div');
                 ansGrid.className = "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-6";
 
-                let selectedGroups = item.bestGroups || [];
+                const candList = getShuffledCandidates(item.seq, item.submissions);
 
-                for (let g = 1; g <= appSettings.numGroups; g++) {
-                    const trans = item.submissions[g] || false;
-                    const btn = document.createElement('button');
-                    btn.className = `p-3 rounded-xl border text-left text-sm transition-all relative group flex flex-col h-full 
-          ${trans ? 'hover:border-indigo-400 bg-white' : 'bg-slate-50 border-slate-100 opacity-50 cursor-not-allowed'}
-          ${selectedGroups.includes(g) ? 'ring-2 ring-indigo-500 border-indigo-500 bg-indigo-50/50' : 'border-slate-200'}
-        `;
-                    if (trans) {
+                if (candList.length === 0) {
+                    ansGrid.innerHTML = `<div class="col-span-full py-6 text-center text-slate-400 font-medium">제출된 영문 번역이 없습니다.</div>`;
+                } else {
+                    candList.forEach((cand, idx) => {
+                        const optLabel = `보기 ${String.fromCharCode(65 + idx)}`;
+                        const isSelected = cand.groups.some(g => selectedGroups.includes(g)) || (item.best && item.best.trim() === cand.text.trim());
+                        const countBadge = `${cand.groups.length}개 모둠`;
+
+                        const btn = document.createElement('button');
+                        btn.id = `btn_seq${item.seq}_g${cand.groups[0]}`;
+                        btn.className = `p-4 rounded-2xl border text-left text-sm transition-all relative group flex flex-col h-full hover:border-indigo-400 bg-white cursor-pointer shadow-sm
+              ${isSelected ? 'ring-2 ring-indigo-500 border-indigo-500 bg-indigo-50/50' : 'border-slate-200'}
+            `;
                         btn.onclick = () => {
-                            openTextZoomModal(`${item.seq}번 문장 (${g}모둠 제출안)`, trans, { type: 'class', seq: item.seq, g: g, trans: trans });
+                            openTextZoomModal(`${item.seq}번 문장 (${optLabel} 제출안)`, cand.text, { type: 'class', seq: item.seq, g: cand.groups[0], trans: cand.text });
                         };
-                    }
 
-                    btn.innerHTML = `
-          <span class="text-xs font-bold ${selectedGroups.includes(g) ? 'text-indigo-600' : 'text-slate-400'} mb-1">${g}모둠</span>
-          <span class="text-slate-800 break-words flex-grow">${trans ? escapeHtml(trans) : '<span class="text-slate-300 italic">미제출</span>'}</span>
-          ${selectedGroups.includes(g) ? '<div class="absolute top-2 right-2 w-3 h-3 bg-indigo-500 rounded-full"></div>' : ''}
-        `;
-                    btn.id = `btn_seq${item.seq}_g${g}`;
-                    ansGrid.appendChild(btn);
+                        btn.innerHTML = `
+              <div class="flex items-center justify-between gap-2 mb-2.5">
+                <span class="text-xs font-bold ${isSelected ? 'text-indigo-600' : 'text-slate-500'} px-2.5 py-1 bg-slate-100 rounded-lg inline-block">${optLabel}</span>
+                <span class="text-[11px] font-semibold text-slate-400 bg-slate-50 border border-slate-100 px-2 py-0.5 rounded-md flex items-center gap-1">
+                  👥 <span>${countBadge}</span>
+                </span>
+              </div>
+              <span class="text-slate-800 break-words flex-grow text-base font-medium leading-relaxed">${escapeHtml(cand.text)}</span>
+              ${isSelected ? '<div class="absolute top-3 right-3 w-3.5 h-3.5 bg-indigo-500 rounded-full shadow-sm"></div>' : ''}
+            `;
+                        ansGrid.appendChild(btn);
+                    });
                 }
                 body.appendChild(ansGrid);
 
@@ -1872,20 +2110,27 @@
 
             if (!item.bestGroups) item.bestGroups = [];
 
-            const idx = item.bestGroups.indexOf(gNum);
+            const isAlreadySelected = item.bestGroups.includes(gNum);
 
-            if (idx > -1) {
-                item.bestGroups.splice(idx, 1);
+            if (isAlreadySelected) {
+                item.bestGroups = [];
+                item.best = '';
             } else {
-                item.bestGroups.push(gNum);
-                item.bestGroups.sort((a, b) => a - b);
-            }
+                const targetText = (transText || (item.submissions ? item.submissions[gNum] : '') || '').trim();
+                item.best = targetText;
 
-            const selectedTexts = item.bestGroups
-                .map(g => item.submissions ? item.submissions[g] : '')
-                .filter(t => t && String(t).trim().length > 0);
-            const uniqueTexts = [...new Set(selectedTexts)];
-            item.best = uniqueTexts.join(' / ');
+                let matchingGroups = [];
+                if (targetText && item.submissions) {
+                    for (let g = 1; g <= appSettings.numGroups; g++) {
+                        const sub = (item.submissions[g] || '').trim();
+                        if (sub && sub === targetText) {
+                            matchingGroups.push(g);
+                        }
+                    }
+                }
+                if (matchingGroups.length === 0) matchingGroups = [gNum];
+                item.bestGroups = matchingGroups;
+            }
 
             for (let g = 1; g <= appSettings.numGroups; g++) {
                 const btn = document.getElementById(`btn_seq${seq}_g${g}`);
@@ -1922,6 +2167,8 @@
             let item = currentClassData.find(i => i.seq == seq);
             const cNumSelect = document.getElementById('voteClassSelect');
             const cNum = cNumSelect ? cNumSelect.value : '';
+            if (!cNum || !cNum.trim() || cNum === '인' || cNum === 'undefined') return;
+
             const ta = document.getElementById(`bestans_${seq}`);
             const bestVal = ta ? ta.value : (item ? item.best : '');
             if (item) item.best = bestVal;
@@ -2063,6 +2310,24 @@
             }
 
             data.forEach(item => {
+                let currentSources = (item.gradeBestSource || '').split(',').map(s => s.trim()).filter(Boolean);
+                const gradeBestParts = (item.gradeBest || '').split(' / ').map(s => s.trim()).filter(Boolean);
+
+                if (item.gradeBest && String(item.gradeBest).trim().length > 0) {
+                    (appSettings.classes || []).forEach(cName => {
+                        const cBestObj = item.classBests ? item.classBests[cName] : null;
+                        if (cBestObj && cBestObj.best) {
+                            const bTexts = String(cBestObj.best).split(' / ').map(t => t.trim()).filter(Boolean);
+                            if (bTexts.some(t => gradeBestParts.includes(t))) {
+                                if (!currentSources.includes(cName)) {
+                                    currentSources.push(cName);
+                                }
+                            }
+                        }
+                    });
+                }
+                item.gradeBestSource = currentSources.join(', ');
+
                 const card = document.createElement('div');
                 card.className = "glass-panel rounded-2xl overflow-hidden border border-slate-200 shadow-sm relative";
                 if (item.gradeBest) {
@@ -2090,34 +2355,46 @@
                 const ansGrid = document.createElement('div');
                 ansGrid.className = "grid grid-cols-1 md:grid-cols-3 gap-4 mb-6";
 
-                let currentSources = (item.gradeBestSource || '').split(',').map(s => s.trim()).filter(Boolean);
-
                 (appSettings.classes || []).forEach(cName => {
                     const cBestObj = item.classBests ? item.classBests[cName] : null;
-                    const isGradeSelected = currentSources.includes(cName);
-
-                    const btn = document.createElement('button');
-                    btn.id = `btn_grade_seq${item.seq}_class${cName}`;
-                    btn.className = `p-4 rounded-xl border text-left transition-all h-full flex flex-col items-start
-          ${cBestObj && cBestObj.best ? 'hover:shadow-md bg-white cursor-pointer' : 'bg-slate-50 border-slate-100 opacity-50 cursor-not-allowed'}
-          ${isGradeSelected ? 'ring-2 ring-emerald-500 border-emerald-500 bg-emerald-50/30' : 'border-slate-200'}
-        `;
-
                     if (cBestObj && cBestObj.best) {
-                        btn.onclick = () => {
-                            openTextZoomModal(`${item.seq}번 문장 (${cName} 대표 정답)`, cBestObj.best, { type: 'grade', seq: item.seq, cName: cName, bestText: cBestObj.best });
-                        };
-                    }
+                        const bTexts = String(cBestObj.best).split(' / ').map(t => t.trim()).filter(Boolean);
+                        const groups = String(cBestObj.groups || '').split(',').map(g => g.trim()).filter(Boolean);
 
-                    btn.innerHTML = `
+                        bTexts.forEach((bText, tIdx) => {
+                            const gLabel = groups[tIdx] || groups.join(',') || '';
+                            const isGradeSelected = gradeBestParts.includes(bText);
+
+                            const btn = document.createElement('button');
+                            btn.id = `btn_grade_seq${item.seq}_class${cName}_${tIdx}`;
+                            btn.className = `p-4 rounded-xl border text-left transition-all h-full flex flex-col items-start hover:shadow-md bg-white cursor-pointer ${isGradeSelected ? 'ring-2 ring-emerald-500 border-emerald-500 bg-emerald-50/30 shadow-md' : 'border-slate-200'}`;
+
+                            btn.onclick = () => {
+                                openTextZoomModal(`${item.seq}번 문장 (${cName} ${gLabel ? gLabel + '모둠' : '대표'})`, bText, { type: 'grade', seq: item.seq, cName: cName, bestText: bText });
+                            };
+
+                            btn.innerHTML = `
           <div class="flex items-center gap-2 mb-2 w-full">
             <span class="px-2 py-0.5 bg-slate-100 text-slate-600 text-xs font-bold rounded">${escapeHtml(cName)} 베스트</span>
-            ${cBestObj && cBestObj.groups ? `<span class="text-[10px] text-slate-400">by ${escapeHtml(String(cBestObj.groups))}모둠</span>` : ''}
+            ${gLabel ? `<span class="text-[10px] text-slate-400">by ${escapeHtml(gLabel)}모둠</span>` : ''}
           </div>
-          <p class="text-slate-800 font-medium flex-grow w-full whitespace-pre-wrap">${cBestObj && cBestObj.best ? escapeHtml(cBestObj.best) : '<span class="text-slate-300 italic text-sm">미선정</span>'}</p>
+          <p class="text-slate-800 font-medium flex-grow w-full whitespace-pre-wrap">${escapeHtml(bText)}</p>
           ${isGradeSelected ? '<div class="grade-selected-badge mt-2 text-emerald-600 text-xs font-bold flex items-center gap-1"><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg> 학년 대표 선정됨</div>' : ''}
         `;
-                    ansGrid.appendChild(btn);
+                            ansGrid.appendChild(btn);
+                        });
+                    } else {
+                        const btn = document.createElement('button');
+                        btn.id = `btn_grade_seq${item.seq}_class${cName}`;
+                        btn.className = `p-4 rounded-xl border text-left transition-all h-full flex flex-col items-start bg-slate-50 border-slate-100 opacity-50 cursor-not-allowed`;
+                        btn.innerHTML = `
+          <div class="flex items-center gap-2 mb-2 w-full">
+            <span class="px-2 py-0.5 bg-slate-100 text-slate-600 text-xs font-bold rounded">${escapeHtml(cName)} 베스트</span>
+          </div>
+          <p class="text-slate-800 font-medium flex-grow w-full whitespace-pre-wrap"><span class="text-slate-300 italic text-sm">미선정</span></p>
+        `;
+                        ansGrid.appendChild(btn);
+                    }
                 });
                 body.appendChild(ansGrid);
 
@@ -2157,22 +2434,32 @@
             let item = currentGradeData.find(i => i.seq == seq);
             if (!item) return;
 
-            let sources = (item.gradeBestSource || '').split(',').map(s => s.trim()).filter(Boolean);
-            const idx = sources.indexOf(source);
+            let currentBestParts = (item.gradeBest || '').split(' / ').map(s => s.trim()).filter(Boolean);
+            const idx = currentBestParts.indexOf(text);
 
             if (idx > -1) {
-                sources.splice(idx, 1);
+                currentBestParts.splice(idx, 1);
             } else {
-                sources.push(source);
+                if (text && text.length > 0) {
+                    currentBestParts.push(text);
+                }
             }
 
-            item.gradeBestSource = sources.join(', ');
+            item.gradeBest = currentBestParts.join(' / ');
 
-            const selectedTexts = sources
-                .map(c => item.classBests && item.classBests[c] ? item.classBests[c].best : '')
-                .filter(t => t && String(t).trim().length > 0);
-            const uniqueTexts = [...new Set(selectedTexts)];
-            item.gradeBest = uniqueTexts.join(' / ');
+            let selectedSources = [];
+            (appSettings.classes || []).forEach(cName => {
+                const cBestObj = item.classBests ? item.classBests[cName] : null;
+                if (cBestObj && cBestObj.best) {
+                    const bTexts = String(cBestObj.best).split(' / ').map(t => t.trim()).filter(Boolean);
+                    if (bTexts.some(t => currentBestParts.includes(t))) {
+                        if (!selectedSources.includes(cName)) {
+                            selectedSources.push(cName);
+                        }
+                    }
+                }
+            });
+            item.gradeBestSource = selectedSources.join(', ');
 
             const ansInput = document.getElementById(`gradeans_${seq}`);
             const srcInput = document.getElementById(`gradesource_${seq}`);
@@ -2184,37 +2471,9 @@
         }
 
         function updateGradeCardUI(seq) {
-            const item = currentGradeData.find(i => i.seq == seq);
-            if (!item) return;
-
-            const selectedSources = (item.gradeBestSource || '').split(',').map(s => s.trim()).filter(Boolean);
-
-            (appSettings.classes || []).forEach(cName => {
-                const btn = document.getElementById(`btn_grade_seq${seq}_class${cName}`);
-                if (btn) {
-                    const isGradeSelected = selectedSources.includes(cName);
-                    const cBestObj = item.classBests ? item.classBests[cName] : null;
-                    const hasBest = cBestObj && cBestObj.best;
-
-                    if (isGradeSelected) {
-                        btn.className = `p-4 rounded-xl border text-left transition-all h-full flex flex-col items-start ring-2 ring-emerald-500 border-emerald-500 bg-emerald-50/30 cursor-pointer shadow-md`;
-                    } else {
-                        btn.className = `p-4 rounded-xl border text-left transition-all h-full flex flex-col items-start border-slate-200 ${hasBest ? 'hover:shadow-md bg-white cursor-pointer' : 'bg-slate-50 border-slate-100 opacity-50 cursor-not-allowed'}`;
-                    }
-
-                    let badgeEl = btn.querySelector('.grade-selected-badge');
-                    if (isGradeSelected) {
-                        if (!badgeEl) {
-                            const badge = document.createElement('div');
-                            badge.className = "grade-selected-badge mt-2 text-emerald-600 text-xs font-bold flex items-center gap-1";
-                            badge.innerHTML = `<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg> 학년 대표 선정됨`;
-                            btn.appendChild(badge);
-                        }
-                    } else {
-                        if (badgeEl) badgeEl.remove();
-                    }
-                }
-            });
+            if (currentGradeData && currentGradeData.length > 0) {
+                renderGradeVoting(currentGradeData);
+            }
         }
 
         function saveItemGradeBest(seq) {
@@ -2288,27 +2547,32 @@
 
                 gridEl.className = "w-full max-w-screen-2xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6";
 
-                for (let g = 1; g <= appSettings.numGroups; g++) {
-                    const trans = item.submissions[g];
-                    if (trans) {
-                        const isBest = item.bestGroups && item.bestGroups.includes(g);
-                        const card = document.createElement('div');
-                        card.className = `cursor-pointer transition-transform hover:scale-[1.02] p-6 md:p-8 rounded-3xl border-4 ${isBest ? 'border-indigo-500 bg-indigo-50' : 'border-slate-200 bg-white hover:border-indigo-300'} shadow-xl flex flex-col h-full min-h-[200px]`;
-                        
-                        card.innerHTML = `
-                            <div class="text-2xl md:text-3xl font-black ${isBest ? 'text-indigo-600' : 'text-slate-400'} mb-6 flex justify-between items-center border-b pb-4 border-slate-200 pointer-events-none">
-                                <span>${g}모둠</span>
-                                ${isBest ? '<span class="text-4xl">🏆</span>' : ''}
+                const candList = getShuffledCandidates(seq, item.submissions);
+
+                candList.forEach((cand, idx) => {
+                    const optLabel = `보기 ${String.fromCharCode(65 + idx)}`;
+                    const isBest = item.best && item.best.trim() === cand.text.trim();
+                    const countBadge = `${cand.groups.length}개 모둠`;
+
+                    const card = document.createElement('div');
+                    card.className = `cursor-pointer transition-transform hover:scale-[1.02] p-6 md:p-8 rounded-3xl border-4 ${isBest ? 'border-indigo-500 bg-indigo-50' : 'border-slate-200 bg-white hover:border-indigo-300'} shadow-xl flex flex-col h-full min-h-[200px]`;
+                    
+                    card.innerHTML = `
+                        <div class="text-2xl md:text-3xl font-black ${isBest ? 'text-indigo-600' : 'text-slate-400'} mb-6 flex justify-between items-center border-b pb-4 border-slate-200 pointer-events-none">
+                            <div class="flex items-center gap-3">
+                                <span>${optLabel}</span>
+                                <span class="text-base font-semibold text-slate-400 bg-slate-100 px-3 py-1 rounded-xl">👥 ${countBadge}</span>
                             </div>
-                            <div class="text-3xl md:text-4xl leading-snug font-medium text-slate-800 flex-grow break-keep pointer-events-none">${escapeHtml(trans)}</div>
-                        `;
-                        
-                        card.onclick = () => {
-                            openTextZoomModal(`${seq}번 문장 (${g}모둠 제출안)`, trans, { type: 'class', seq: seq, g: g, trans: trans });
-                        };
-                        gridEl.appendChild(card);
-                    }
-                }
+                            ${isBest ? '<span class="text-4xl">🏆</span>' : ''}
+                        </div>
+                        <div class="text-3xl md:text-4xl leading-snug font-medium text-slate-800 flex-grow break-keep pointer-events-none">${escapeHtml(cand.text)}</div>
+                    `;
+                    
+                    card.onclick = () => {
+                        openTextZoomModal(`${seq}번 문장 (${optLabel} 제출안)`, cand.text, { type: 'class', seq: seq, g: cand.groups[0], trans: cand.text });
+                    };
+                    gridEl.appendChild(card);
+                });
             } else if (type === 'grade') {
                 const item = currentGradeData.find(i => i.seq == seq);
                 if (!item) return;
@@ -2319,26 +2583,34 @@
 
                 gridEl.className = "w-full max-w-screen-2xl grid grid-cols-1 md:grid-cols-3 gap-8";
 
+                const selectedBestParts = (item.gradeBest || '').split(' / ').map(s => s.trim()).filter(Boolean);
+
                 (appSettings.classes || []).forEach(cName => {
                     const cBestObj = item.classBests ? item.classBests[cName] : null;
                     if (cBestObj && cBestObj.best) {
-                        const isGradeSelected = (item.gradeBestSource === cName);
-                        const card = document.createElement('div');
-                        card.className = `cursor-pointer transition-transform hover:scale-[1.02] p-8 md:p-10 rounded-3xl border-4 ${isGradeSelected ? 'border-emerald-500 bg-emerald-50' : 'border-slate-200 bg-white hover:border-emerald-300'} shadow-2xl flex flex-col h-full min-h-[250px]`;
-                        
-                        card.innerHTML = `
-                            <div class="text-3xl md:text-4xl font-black ${isGradeSelected ? 'text-emerald-600' : 'text-slate-400'} mb-2 flex justify-between items-center pointer-events-none">
-                                <span>${escapeHtml(cName)} 베스트</span>
-                                ${isGradeSelected ? '<span class="text-4xl">👑</span>' : ''}
-                            </div>
-                            <div class="text-xl text-slate-400 mb-8 font-bold border-b pb-4 border-slate-200 pointer-events-none">(by ${escapeHtml(String(cBestObj.groups))}모둠)</div>
-                            <div class="text-4xl md:text-5xl leading-snug font-medium text-slate-800 flex-grow break-keep pointer-events-none">${escapeHtml(cBestObj.best)}</div>
-                        `;
+                        const bTexts = String(cBestObj.best).split(' / ').map(t => t.trim()).filter(Boolean);
+                        const groups = String(cBestObj.groups || '').split(',').map(g => g.trim()).filter(Boolean);
 
-                        card.onclick = () => {
-                            openTextZoomModal(`${seq}번 문장 (${cName} 대표 정답)`, cBestObj.best, { type: 'grade', seq: seq, cName: cName, bestText: cBestObj.best });
-                        };
-                        gridEl.appendChild(card);
+                        bTexts.forEach((bText, tIdx) => {
+                            const gLabel = groups[tIdx] || groups.join(',') || '';
+                            const isGradeSelected = selectedBestParts.includes(bText);
+                            const card = document.createElement('div');
+                            card.className = `cursor-pointer transition-transform hover:scale-[1.02] p-8 md:p-10 rounded-3xl border-4 ${isGradeSelected ? 'border-emerald-500 bg-emerald-50' : 'border-slate-200 bg-white hover:border-emerald-300'} shadow-2xl flex flex-col h-full min-h-[250px]`;
+                            
+                            card.innerHTML = `
+                                <div class="text-3xl md:text-4xl font-black ${isGradeSelected ? 'text-emerald-600' : 'text-slate-400'} mb-2 flex justify-between items-center pointer-events-none">
+                                    <span>${escapeHtml(cName)} 베스트</span>
+                                    ${isGradeSelected ? '<span class="text-4xl">👑</span>' : ''}
+                                </div>
+                                <div class="text-xl text-slate-400 mb-8 font-bold border-b pb-4 border-slate-200 pointer-events-none">${gLabel ? `(by ${escapeHtml(gLabel)}모둠)` : ''}</div>
+                                <div class="text-4xl md:text-5xl leading-snug font-medium text-slate-800 flex-grow break-keep pointer-events-none">${escapeHtml(bText)}</div>
+                            `;
+
+                            card.onclick = () => {
+                                openTextZoomModal(`${seq}번 문장 (${cName} ${gLabel ? gLabel + '모둠' : '대표'})`, bText, { type: 'grade', seq: seq, cName: cName, bestText: bText, groupLabel: gLabel });
+                            };
+                            gridEl.appendChild(card);
+                        });
                     }
                 });
             }
@@ -3497,7 +3769,7 @@
 
         function saveSettings() {
             const classStr = document.getElementById('setClasses').value;
-            const classesList = classStr.split(',').map(s => s.trim()).filter(s => s);
+            const classesList = classStr.split(',').map(s => s.trim()).filter(s => s && s !== '인' && s !== 'undefined' && s !== 'null');
             const g = parseInt(document.getElementById('setNumGroups').value);
             const roleStr = document.getElementById('setRoles').value;
             const rolesList = roleStr.split(',').map(s => s.trim()).filter(s => s);
