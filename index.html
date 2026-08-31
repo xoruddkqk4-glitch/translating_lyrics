@@ -595,6 +595,14 @@
                 <span id="pmRole" class="text-xl md:text-2xl text-slate-500 font-bold uppercase tracking-widest"></span>
             </div>
             <div class="flex items-center gap-3">
+                <div class="flex items-center gap-1.5 mr-2">
+                    <button onclick="navigatePresentationModal(-1)" class="px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl font-extrabold text-sm transition flex items-center gap-1 shadow-sm border border-indigo-200 cursor-pointer" title="이전 문장 (◀)">
+                        ◀ 이전
+                    </button>
+                    <button onclick="navigatePresentationModal(1)" class="px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl font-extrabold text-sm transition flex items-center gap-1 shadow-sm border border-indigo-200 cursor-pointer" title="다음 문장 (▶)">
+                        다음 ▶
+                    </button>
+                </div>
                 <button id="pmSaveBtn" onclick="saveFromPresentationMode()"
                     class="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-lg font-bold transition shadow-md flex items-center gap-2">
                     <span>💾 선택 항목 시트 저장</span>
@@ -638,19 +646,31 @@
     <!-- Text Zoom Modal -->
     <div id="textZoomModal" class="fixed inset-0 z-[150] hidden items-center justify-center p-4 md:p-8 cursor-pointer select-none" onclick="closeTextZoomModal()">
         <div class="absolute inset-0 bg-slate-950/80 backdrop-blur-md"></div>
-        <div class="relative bg-white text-slate-900 w-full max-w-4xl p-8 md:p-14 rounded-3xl shadow-2xl border-4 border-indigo-400 text-center transform transition-all overflow-hidden flex flex-col items-center justify-center min-h-[280px] max-h-[85vh] overflow-y-auto" onclick="closeTextZoomModal()">
+        <button onclick="event.stopPropagation(); navigateTextZoomModal(-1);" class="absolute left-3 md:left-8 top-1/2 -translate-y-1/2 w-12 h-12 md:w-16 md:h-16 bg-white/90 hover:bg-white text-slate-800 rounded-full flex items-center justify-center text-2xl md:text-3xl font-black shadow-2xl border-2 border-indigo-400 transition cursor-pointer z-[170]" title="이전 문장 (◀)">
+            ◀
+        </button>
+        <button onclick="event.stopPropagation(); navigateTextZoomModal(1);" class="absolute right-3 md:right-8 top-1/2 -translate-y-1/2 w-12 h-12 md:w-16 md:h-16 bg-white/90 hover:bg-white text-slate-800 rounded-full flex items-center justify-center text-2xl md:text-3xl font-black shadow-2xl border-2 border-indigo-400 transition cursor-pointer z-[170]" title="다음 문장 (▶)">
+            ▶
+        </button>
+        <div class="relative bg-white text-slate-900 w-full max-w-4xl p-8 md:p-14 rounded-3xl shadow-2xl border-4 border-indigo-400 text-center transform transition-all overflow-hidden flex flex-col items-center justify-center min-h-[280px] max-h-[85vh] overflow-y-auto z-10" onclick="closeTextZoomModal()">
             <button onclick="event.stopPropagation(); closeTextZoomModal();" class="absolute top-5 right-5 w-12 h-12 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-full flex items-center justify-center text-2xl font-bold transition shadow-sm" title="닫기 (X)">
                 ✕
             </button>
             <span id="zoomModalLabel" class="inline-block px-4 py-1.5 bg-indigo-100 text-indigo-700 text-base md:text-lg font-bold rounded-full mb-6"></span>
             <p id="zoomModalText" class="text-3xl md:text-5xl lg:text-6xl font-medium font-serif leading-snug break-words text-slate-800 tracking-wide mb-6"></p>
             <div id="zoomModalActionArea" class="mt-4 mb-4" onclick="event.stopPropagation()"></div>
-            <p class="mt-2 text-slate-400 text-xs md:text-sm">💡 바탕 화면이나 X 버튼을 누르면 창이 닫힙니다.</p>
+            <p class="mt-2 text-slate-400 text-xs md:text-sm">💡 바탕 화면이나 X 버튼을 누르면 창이 닫힙니다. (좌/우 화살표 버튼 또는 키보드 ← / → 키로 이동)</p>
         </div>
     </div>
 
     <!-- Compare Zoom Modal -->
     <div id="compareZoomModal" class="fixed inset-0 z-[160] bg-slate-950/80 backdrop-blur-md hidden items-center justify-center p-4 md:p-8" onclick="closeCompareZoomModal()">
+        <button onclick="event.stopPropagation(); navigateCompareZoomModal(-1);" class="absolute left-3 md:left-8 top-1/2 -translate-y-1/2 w-12 h-12 md:w-16 md:h-16 bg-white/90 hover:bg-white text-purple-800 rounded-full flex items-center justify-center text-2xl md:text-3xl font-black shadow-2xl border-2 border-purple-400 transition cursor-pointer z-[170]" title="이전 문장 (◀)">
+            ◀
+        </button>
+        <button onclick="event.stopPropagation(); navigateCompareZoomModal(1);" class="absolute right-3 md:right-8 top-1/2 -translate-y-1/2 w-12 h-12 md:w-16 md:h-16 bg-white/90 hover:bg-white text-purple-800 rounded-full flex items-center justify-center text-2xl md:text-3xl font-black shadow-2xl border-2 border-purple-400 transition cursor-pointer z-[170]" title="다음 문장 (▶)">
+            ▶
+        </button>
         <div class="bg-white rounded-3xl p-6 md:p-10 max-w-5xl w-full max-h-[90vh] overflow-y-auto shadow-2xl relative border border-slate-100 flex flex-col justify-between" onclick="event.stopPropagation()">
             <button onclick="closeCompareZoomModal()" class="absolute top-6 right-6 w-10 h-10 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-full flex items-center justify-center font-bold text-xl transition cursor-pointer">
                 ✕
@@ -801,10 +821,9 @@
         let currentZoomData = null;
 
         function openTextZoomModal(label, text, contextObj) {
-            if (!text) return;
             currentZoomData = contextObj || null;
             document.getElementById('zoomModalLabel').innerText = label || '';
-            document.getElementById('zoomModalText').innerText = text;
+            document.getElementById('zoomModalText').innerText = text || (contextObj && contextObj.type === 'grade' ? '미선정' : '미제출');
             
             renderZoomModalAction();
 
@@ -852,7 +871,8 @@
             } else if (currentZoomData.type === 'grade') {
                 const { seq, cName, bestText } = currentZoomData;
                 const item = currentGradeData.find(i => i.seq == seq);
-                const isSelected = item && (item.gradeBestSource === cName);
+                const currentSources = (item && item.gradeBestSource || '').split(',').map(s => s.trim()).filter(Boolean);
+                const isSelected = currentSources.includes(cName);
 
                 const btn = document.createElement('button');
                 btn.type = 'button';
@@ -873,10 +893,6 @@
                 btn.onclick = (e) => {
                     e.stopPropagation();
                     setGradeSelection(seq, cName, bestText);
-                    if (item) {
-                        item.gradeBestSource = cName;
-                        item.gradeBest = bestText;
-                    }
                     renderZoomModalAction();
                 };
                 area.appendChild(btn);
@@ -888,6 +904,37 @@
             modal.classList.add('hidden');
             modal.classList.remove('flex');
             document.body.style.overflow = 'auto';
+        }
+
+        function navigateTextZoomModal(direction) {
+            if (!currentZoomData) return;
+            const { type, seq, g, cName } = currentZoomData;
+
+            if (type === 'class') {
+                const maxG = appSettings.numGroups || 8;
+                let targetG = Number(g || 1) + direction;
+                if (targetG < 1) targetG = maxG;
+                if (targetG > maxG) targetG = 1;
+
+                const targetItem = currentClassData.find(i => i.seq == seq);
+                if (!targetItem) return;
+                const trans = (targetItem.submissions && targetItem.submissions[targetG]) ? targetItem.submissions[targetG] : '';
+                openTextZoomModal(`${seq}번 문장 (${targetG}모둠 제출안)`, trans, { type: 'class', seq: seq, g: targetG, trans: trans });
+            } else if (type === 'grade') {
+                const classList = (appSettings.classes && appSettings.classes.length > 0) ? appSettings.classes : ['1반', '2반', '3반'];
+                let currIdx = classList.indexOf(cName);
+                if (currIdx === -1) currIdx = 0;
+                let targetIdx = currIdx + direction;
+                if (targetIdx < 0) targetIdx = classList.length - 1;
+                if (targetIdx >= classList.length) targetIdx = 0;
+
+                const targetCName = classList[targetIdx];
+                const targetItem = currentGradeData.find(i => i.seq == seq);
+                if (!targetItem) return;
+                const cBestObj = targetItem.classBests ? targetItem.classBests[targetCName] : null;
+                const bestText = (cBestObj && cBestObj.best) ? cBestObj.best : '';
+                openTextZoomModal(`${seq}번 문장 (${targetCName} 대표 정답)`, bestText, { type: 'grade', seq: seq, cName: targetCName, bestText: bestText });
+            }
         }
 
         let serverPageMode = "<?= pageMode ?>";
@@ -1792,16 +1839,16 @@
                 body.appendChild(ansGrid);
 
                 const editArea = document.createElement('div');
-                editArea.className = "bg-slate-50 rounded-xl p-4 border border-slate-200 mt-4 flex flex-col md:flex-row gap-4 items-stretch";
+                editArea.className = "bg-slate-50 rounded-xl p-4 border border-slate-200 mt-4 flex flex-col md:flex-row gap-4 items-center";
                 editArea.innerHTML = `
-        <div class="flex-grow">
+        <div class="flex-grow w-full">
           <label class="block text-xs font-bold text-indigo-600 mb-2 uppercase tracking-wide">🏆 반 대표 베스트 영어 문장 조합/수정</label>
-          <textarea id="bestans_${item.seq}" rows="2" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 font-medium bg-white resize-none" placeholder="모둠의 정답을 선택하면 이곳에 복사됩니다. 자유롭게 다듬어 최종 영문 정답을 만드세요!">${escapeHtml(item.best || '')}</textarea>
+          <textarea id="bestans_${item.seq}" rows="2" oninput="debounceSaveClassBest(${item.seq})" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 font-medium bg-white resize-none" placeholder="모둠의 정답을 선택하면 이곳에 복사됩니다. 자유롭게 다듬어 최종 영문 정답을 만드세요!">${escapeHtml(item.best || '')}</textarea>
         </div>
-        <div class="flex items-end justify-end flex-shrink-0">
-          <button onclick="saveItemBest(${item.seq})" class="h-12 px-6 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition shadow-md w-full md:w-auto">
-            베스트 저장
-          </button>
+        <div class="flex items-center justify-end flex-shrink-0">
+          <div id="saveStatus_seq_${item.seq}" class="text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-3 py-2 rounded-lg flex items-center gap-1">
+            <span>⚡ 자동 저장됨</span>
+          </div>
         </div>
       `;
                 body.appendChild(editArea);
@@ -1809,6 +1856,14 @@
                 card.appendChild(body);
                 container.appendChild(card);
             });
+        }
+
+        let saveClassDebounceTimers = {};
+        function debounceSaveClassBest(seq) {
+            if (saveClassDebounceTimers[seq]) clearTimeout(saveClassDebounceTimers[seq]);
+            saveClassDebounceTimers[seq] = setTimeout(() => {
+                saveItemBest(seq);
+            }, 1000);
         }
 
         function toggleGroupSelection(seq, gNum, transText) {
@@ -1819,85 +1874,89 @@
 
             const idx = item.bestGroups.indexOf(gNum);
 
-            item.bestGroups.forEach(oldGNum => {
-                if (oldGNum !== gNum) {
-                    const oldBtn = document.getElementById(`btn_seq${seq}_g${oldGNum}`);
-                    if (oldBtn) {
-                        oldBtn.classList.remove('ring-2', 'ring-indigo-500', 'border-indigo-500', 'bg-indigo-50/50');
-                        const oldText = oldBtn.querySelector('span:first-child');
-                        if (oldText) oldText.classList.replace('text-indigo-600', 'text-slate-400');
-                        const dot = oldBtn.querySelector('.absolute.bg-indigo-500');
+            if (idx > -1) {
+                item.bestGroups.splice(idx, 1);
+            } else {
+                item.bestGroups.push(gNum);
+                item.bestGroups.sort((a, b) => a - b);
+            }
+
+            const selectedTexts = item.bestGroups
+                .map(g => item.submissions ? item.submissions[g] : '')
+                .filter(t => t && String(t).trim().length > 0);
+            const uniqueTexts = [...new Set(selectedTexts)];
+            item.best = uniqueTexts.join(' / ');
+
+            for (let g = 1; g <= appSettings.numGroups; g++) {
+                const btn = document.getElementById(`btn_seq${seq}_g${g}`);
+                if (btn) {
+                    const isSel = item.bestGroups.includes(g);
+                    if (isSel) {
+                        btn.className = btn.className.replace(/border-slate-200/g, '').trim();
+                        if (!btn.classList.contains('ring-2')) {
+                            btn.classList.add('ring-2', 'ring-indigo-500', 'border-indigo-500', 'bg-indigo-50/50');
+                        }
+                        const gText = btn.querySelector('span:first-child');
+                        if (gText) gText.classList.replace('text-slate-400', 'text-indigo-600');
+                        if (!btn.innerHTML.includes('bg-indigo-500')) {
+                            btn.innerHTML += '<div class="absolute top-2 right-2 w-3 h-3 bg-indigo-500 rounded-full"></div>';
+                        }
+                    } else {
+                        btn.classList.remove('ring-2', 'ring-indigo-500', 'border-indigo-500', 'bg-indigo-50/50');
+                        if (!btn.classList.contains('border-slate-200')) btn.classList.add('border-slate-200');
+                        const gText = btn.querySelector('span:first-child');
+                        if (gText) gText.classList.replace('text-indigo-600', 'text-slate-400');
+                        const dot = btn.querySelector('.absolute.bg-indigo-500');
                         if (dot) dot.remove();
                     }
                 }
-            });
-
-            if (idx > -1) {
-                item.bestGroups = [];
-                item.best = '';
-                const btn = document.getElementById(`btn_seq${seq}_g${gNum}`);
-                if (btn) {
-                    btn.classList.remove('ring-2', 'ring-indigo-500', 'border-indigo-500', 'bg-indigo-50/50');
-                    const gText = btn.querySelector('span:first-child');
-                    if (gText) gText.classList.replace('text-indigo-600', 'text-slate-400');
-                    const dot = btn.querySelector('.absolute.bg-indigo-500');
-                    if (dot) dot.remove();
-                }
-                const ta = document.getElementById(`bestans_${seq}`);
-                if (ta) ta.value = '';
-            } else {
-                item.bestGroups = [gNum];
-                item.best = transText;
-                const btn = document.getElementById(`btn_seq${seq}_g${gNum}`);
-                if (btn) {
-                    btn.classList.add('ring-2', 'ring-indigo-500', 'border-indigo-500', 'bg-indigo-50/50');
-                    const gText = btn.querySelector('span:first-child');
-                    if (gText) gText.classList.replace('text-slate-400', 'text-indigo-600');
-                    if (!btn.innerHTML.includes('bg-indigo-500')) {
-                        btn.innerHTML += '<div class="absolute top-2 right-2 w-3 h-3 bg-indigo-500 rounded-full"></div>';
-                    }
-                }
-
-                const ta = document.getElementById(`bestans_${seq}`);
-                if (ta) ta.value = transText;
             }
+
+            const ta = document.getElementById(`bestans_${seq}`);
+            if (ta) ta.value = item.best;
+
+            saveItemBest(seq);
         }
 
         function saveItemBest(seq) {
             let item = currentClassData.find(i => i.seq == seq);
-            const cNum = document.getElementById('voteClassSelect').value;
+            const cNumSelect = document.getElementById('voteClassSelect');
+            const cNum = cNumSelect ? cNumSelect.value : '';
             const ta = document.getElementById(`bestans_${seq}`);
             const bestVal = ta ? ta.value : (item ? item.best : '');
+            if (item) item.best = bestVal;
 
-            const btn = ta ? ta.parentElement.nextElementSibling.querySelector('button') : null;
-            const origText = btn ? btn.innerText : '';
-            if (btn) {
-                btn.innerText = "저장 중...";
-                btn.disabled = true;
+            const statusEl = document.getElementById(`saveStatus_seq_${seq}`);
+            if (statusEl) {
+                statusEl.innerHTML = '<span class="animate-pulse">⏳ 저장 중...</span>';
+                statusEl.className = "text-xs font-bold text-amber-600 bg-amber-50 border border-amber-200 px-3 py-2 rounded-lg flex items-center gap-1";
             }
 
-            const args = [cNum, seq, item.lyric || item.korean, bestVal, item.bestGroups || []];
+            const args = [cNum, seq, item ? (item.lyric || item.korean) : '', bestVal, item ? (item.bestGroups || []) : []];
 
             if (isGoogleEnv) {
                 google.script.run
                     .withSuccessHandler(() => {
-                        if (btn) {
-                            btn.innerText = "저장 완료!";
-                            btn.classList.replace('bg-indigo-600', 'bg-green-500');
-                            setTimeout(() => {
-                                btn.innerText = "베스트 저장";
-                                btn.classList.replace('bg-green-500', 'bg-indigo-600');
-                                btn.disabled = false;
-                            }, 2000);
+                        if (statusEl) {
+                            statusEl.innerHTML = '<span>⚡ 자동 저장됨</span>';
+                            statusEl.className = "text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-3 py-2 rounded-lg flex items-center gap-1";
                         }
                     })
                     .withFailureHandler(err => {
-                        if (btn) { btn.innerText = origText; btn.disabled = false; }
+                        if (statusEl) {
+                            statusEl.innerHTML = '<span>⚠️ 저장 실패</span>';
+                            statusEl.className = "text-xs font-bold text-rose-600 bg-rose-50 border border-rose-200 px-3 py-2 rounded-lg flex items-center gap-1";
+                        }
                         handleGlobalError(err);
                     })
                     .saveClassBest(...args);
             } else {
-                setTimeout(() => { if (btn) { btn.innerText = "저장 완료!"; btn.disabled = false; } }, 1000);
+                setTimeout(() => {
+                    if (statusEl) {
+                        statusEl.innerHTML = '<span>⚡ 자동 저장됨</span>';
+                        statusEl.className = "text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-3 py-2 rounded-lg flex items-center gap-1";
+                    }
+                }, 500);
             }
         }
 
@@ -2031,11 +2090,11 @@
                 const ansGrid = document.createElement('div');
                 ansGrid.className = "grid grid-cols-1 md:grid-cols-3 gap-4 mb-6";
 
-                let classSource = item.gradeBestSource || '';
+                let currentSources = (item.gradeBestSource || '').split(',').map(s => s.trim()).filter(Boolean);
 
                 (appSettings.classes || []).forEach(cName => {
                     const cBestObj = item.classBests ? item.classBests[cName] : null;
-                    const isGradeSelected = (classSource === cName);
+                    const isGradeSelected = currentSources.includes(cName);
 
                     const btn = document.createElement('button');
                     btn.id = `btn_grade_seq${item.seq}_class${cName}`;
@@ -2063,20 +2122,20 @@
                 body.appendChild(ansGrid);
 
                 const editArea = document.createElement('div');
-                editArea.className = "bg-rose-50/30 rounded-xl p-4 border border-rose-100 mt-2 flex flex-col sm:flex-row gap-4";
+                editArea.className = "bg-rose-50/30 rounded-xl p-4 border border-rose-100 mt-2 flex flex-col sm:flex-row gap-4 items-center";
                 editArea.innerHTML = `
         <div class="flex-grow">
           <label class="block text-[10px] font-bold text-rose-600 uppercase mb-1">최종 학년 베스트 정답</label>
-          <input type="text" id="gradeans_${item.seq}" value="${escapeHtml(item.gradeBest || '')}" class="w-full p-2 border border-slate-300 rounded focus:ring-1 focus:ring-rose-500 text-sm font-medium bg-white">
+          <input type="text" id="gradeans_${item.seq}" oninput="debounceSaveGradeBest(${item.seq})" value="${escapeHtml(item.gradeBest || '')}" class="w-full p-2 border border-slate-300 rounded focus:ring-1 focus:ring-rose-500 text-sm font-medium bg-white">
         </div>
         <div class="w-32">
            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">대표 반(출처)</label>
-           <input type="text" id="gradesource_${item.seq}" value="${escapeHtml(item.gradeBestSource || '')}" class="w-full p-2 border border-slate-300 rounded focus:ring-1 focus:ring-slate-500 text-sm text-center font-medium bg-slate-50">
+           <input type="text" id="gradesource_${item.seq}" oninput="debounceSaveGradeBest(${item.seq})" value="${escapeHtml(item.gradeBestSource || '')}" class="w-full p-2 border border-slate-300 rounded focus:ring-1 focus:ring-slate-500 text-sm text-center font-medium bg-slate-50">
         </div>
         <div class="flex items-end">
-          <button onclick="saveItemGradeBest(${item.seq})" class="h-9 px-6 bg-slate-800 text-white text-sm font-bold rounded hover:bg-slate-900 transition whitespace-nowrap">
-            최종 픽 저장
-          </button>
+          <div id="saveGradeStatus_seq_${item.seq}" class="h-9 px-3 bg-emerald-50 border border-emerald-200 text-emerald-600 text-xs font-bold rounded flex items-center gap-1 whitespace-nowrap">
+            <span>⚡ 자동 저장됨</span>
+          </div>
         </div>
       `;
                 body.appendChild(editArea);
@@ -2086,17 +2145,34 @@
             });
         }
 
+        let saveGradeDebounceTimers = {};
+        function debounceSaveGradeBest(seq) {
+            if (saveGradeDebounceTimers[seq]) clearTimeout(saveGradeDebounceTimers[seq]);
+            saveGradeDebounceTimers[seq] = setTimeout(() => {
+                saveItemGradeBest(seq);
+            }, 1000);
+        }
+
         function setGradeSelection(seq, source, text) {
             let item = currentGradeData.find(i => i.seq == seq);
             if (!item) return;
 
-            if (item.gradeBestSource === source) {
-                item.gradeBestSource = '';
-                item.gradeBest = '';
+            let sources = (item.gradeBestSource || '').split(',').map(s => s.trim()).filter(Boolean);
+            const idx = sources.indexOf(source);
+
+            if (idx > -1) {
+                sources.splice(idx, 1);
             } else {
-                item.gradeBestSource = source;
-                item.gradeBest = text;
+                sources.push(source);
             }
+
+            item.gradeBestSource = sources.join(', ');
+
+            const selectedTexts = sources
+                .map(c => item.classBests && item.classBests[c] ? item.classBests[c].best : '')
+                .filter(t => t && String(t).trim().length > 0);
+            const uniqueTexts = [...new Set(selectedTexts)];
+            item.gradeBest = uniqueTexts.join(' / ');
 
             const ansInput = document.getElementById(`gradeans_${seq}`);
             const srcInput = document.getElementById(`gradesource_${seq}`);
@@ -2104,16 +2180,19 @@
             if (srcInput) srcInput.value = item.gradeBestSource;
 
             updateGradeCardUI(seq);
+            saveItemGradeBest(seq);
         }
 
         function updateGradeCardUI(seq) {
             const item = currentGradeData.find(i => i.seq == seq);
             if (!item) return;
 
+            const selectedSources = (item.gradeBestSource || '').split(',').map(s => s.trim()).filter(Boolean);
+
             (appSettings.classes || []).forEach(cName => {
                 const btn = document.getElementById(`btn_grade_seq${seq}_class${cName}`);
                 if (btn) {
-                    const isGradeSelected = (item.gradeBestSource === cName);
+                    const isGradeSelected = selectedSources.includes(cName);
                     const cBestObj = item.classBests ? item.classBests[cName] : null;
                     const hasBest = cBestObj && cBestObj.best;
 
@@ -2144,27 +2223,42 @@
             const srcEl = document.getElementById(`gradesource_${seq}`);
             const ans = ansEl ? ansEl.value : (item ? item.gradeBest : '');
             const source = srcEl ? srcEl.value : (item ? item.gradeBestSource : '');
+            if (item) {
+                item.gradeBest = ans;
+                item.gradeBestSource = source;
+            }
 
-            const btn = ansEl ? ansEl.parentElement.parentElement.querySelector('button') : null;
-            if (btn) btn.innerText = "저장 중...";
-            const args = [seq, item.korean || item.lyric, ans, source];
+            const statusEl = document.getElementById(`saveGradeStatus_seq_${seq}`);
+            if (statusEl) {
+                statusEl.innerHTML = '<span class="animate-pulse">⏳ 저장 중...</span>';
+                statusEl.className = "h-9 px-3 bg-amber-50 border border-amber-200 text-amber-600 text-xs font-bold rounded flex items-center gap-1 whitespace-nowrap";
+            }
+
+            const args = [seq, item ? (item.korean || item.lyric) : '', ans, source];
 
             if (isGoogleEnv) {
                 google.script.run
                     .withSuccessHandler(() => {
-                        if (btn) {
-                            btn.innerText = "저장됨!";
-                            btn.classList.add('bg-emerald-600');
+                        if (statusEl) {
+                            statusEl.innerHTML = '<span>⚡ 자동 저장됨</span>';
+                            statusEl.className = "h-9 px-3 bg-emerald-50 border border-emerald-200 text-emerald-600 text-xs font-bold rounded flex items-center gap-1 whitespace-nowrap";
                         }
-                        setTimeout(() => loadGradeAnswers(), 1000);
                     })
                     .withFailureHandler(err => {
-                        if (btn) btn.innerText = "최종 픽 저장";
+                        if (statusEl) {
+                            statusEl.innerHTML = '<span>⚠️ 저장 실패</span>';
+                            statusEl.className = "h-9 px-3 bg-rose-50 border border-rose-200 text-rose-600 text-xs font-bold rounded flex items-center gap-1 whitespace-nowrap";
+                        }
                         handleGlobalError(err);
                     })
                     .saveGradeBest(...args);
             } else {
-                setTimeout(() => { if (btn) btn.innerText = "저장됨!"; }, 500);
+                setTimeout(() => {
+                    if (statusEl) {
+                        statusEl.innerHTML = '<span>⚡ 자동 저장됨</span>';
+                        statusEl.className = "h-9 px-3 bg-emerald-50 border border-emerald-200 text-emerald-600 text-xs font-bold rounded flex items-center gap-1 whitespace-nowrap";
+                    }
+                }, 500);
             }
         }
 
@@ -2259,6 +2353,16 @@
             modal.classList.add('hidden');
             modal.classList.remove('flex');
             document.body.style.overflow = 'auto';
+        }
+
+        function navigatePresentationModal(direction) {
+            if (!currentPMType || !currentPMSeq) return;
+            const targetSeq = Number(currentPMSeq) + direction;
+            const dataList = (currentPMType === 'class') ? currentClassData : currentGradeData;
+            const targetItem = dataList.find(i => i.seq == targetSeq);
+            if (targetItem) {
+                showPresentationMode(currentPMType, targetSeq);
+            }
         }
 
         function saveFromPresentationMode() {
@@ -3310,9 +3414,12 @@
             });
         }
 
+        let currentCompareSeq = null;
+
         function openCompareZoomModal(seq) {
             const item = currentCompareData.find(i => i.seq == seq);
             if (!item) return;
+            currentCompareSeq = Number(seq);
 
             document.getElementById('compZoomSeq').innerText = item.seq;
             document.getElementById('compZoomSource').innerText = item.gradeBestSource ? `🏆 ${item.gradeBestSource} 대표 채택` : '미선정';
@@ -3332,6 +3439,43 @@
             modal.classList.remove('flex');
             document.body.style.overflow = 'auto';
         }
+
+        function navigateCompareZoomModal(direction) {
+            if (!currentCompareSeq) return;
+            const targetSeq = currentCompareSeq + direction;
+            const targetItem = currentCompareData.find(i => i.seq == targetSeq);
+            if (targetItem) {
+                openCompareZoomModal(targetSeq);
+            }
+        }
+
+        document.addEventListener('keydown', function (e) {
+            const textModal = document.getElementById('textZoomModal');
+            const presModal = document.getElementById('presentationModal');
+            const compModal = document.getElementById('compareZoomModal');
+
+            const isTextOpen = textModal && !textModal.classList.contains('hidden');
+            const isPresOpen = presModal && !presModal.classList.contains('hidden');
+            const isCompOpen = compModal && !compModal.classList.contains('hidden');
+
+            if (!isTextOpen && !isPresOpen && !isCompOpen) return;
+
+            if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                if (isTextOpen) navigateTextZoomModal(-1);
+                else if (isPresOpen) navigatePresentationModal(-1);
+                else if (isCompOpen) navigateCompareZoomModal(-1);
+            } else if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                if (isTextOpen) navigateTextZoomModal(1);
+                else if (isPresOpen) navigatePresentationModal(1);
+                else if (isCompOpen) navigateCompareZoomModal(1);
+            } else if (e.key === 'Escape') {
+                if (isTextOpen) closeTextZoomModal();
+                if (isPresOpen) closePresentationMode();
+                if (isCompOpen) closeCompareZoomModal();
+            }
+        });
 
         // --- Settings View ---
         function loadSettingsForm() {
