@@ -133,9 +133,15 @@
   2) 기존 `진도ID`, `차시`, `Lesson` 헤더로 입력되어 있던 시트 데이터도 자동 인식되어 데이터 유실 없이 정상 호환되도록 유연한 맵핑 로직 탑재.
   3) 구글 시트 상단 메뉴에 `[📐 한영번역 마스터] > ⚙️ 시트 초기화 및 차시ID 헤더 갱신` 메뉴(`onOpen`)를 추가하여 누구나 클릭 한 번으로 시트와 헤더를 즉시 생성 및 업그레이드 가능하도록 개선.
 
-### ✅ 4. 검증 결과 (Verification Results)
+### 📌 2. 단일 카드 포커스 및 문제 이동 단축키 개선 (Single Card Focus & Key Navigation Update)
+- **단일 카드 포커스 모달 내 우리말 문장 표시**:
+  - 교사 대시보드의 반별 대표 선정 및 학년 대표 선정에서 제출안 카드를 클릭하여 크게 확대 포커스(`textZoomModal`)할 때, 카드 상단에 해당 문장의 **`🇰🇷 우리말 원문`** 배너 박스를 명확하게 표시하도록 개선
+- **상/하(▲/▼) 방향키 기반 이전/다음 문제 이동 지원**:
+  - 기존 좌/우(◀/▶) 방향키는 동일 문장 내 제출 보기/반별 정답 선택 이동 기능으로 유지
+  - **위/아래 방향키(`ArrowUp` / `ArrowDown`)**를 통해 이전 문제(`seq - 1`) 및 다음 문제(`seq + 1`)의 단일 카드 포커스로 연속 전환 가능하도록 단축키 및 상단 버튼([▲ 이전 문제], [다음 문제 ▼]) 추가
+
+### ✅ 검증 결과 (Verification Results)
 - **Node.js AST 문법 검증**: `Code.gs` 및 `index.html` 내 모든 JavaScript 구문 검사 통과 (`Code.gs syntax VALID`, `index.html script 0 syntax VALID`).
-- **하위 호환성 검증**: 기존 데이터 손실 없이 `'1차시'`로 자동 매핑되어 이전 제출 및 평가 기록 정상 표시 확인.
 
 ---
 *Built with HTML5, Vanilla JavaScript, TailwindCSS, and Google Apps Script*
